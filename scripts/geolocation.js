@@ -8,29 +8,18 @@ function initGeolocation() {
         userLng = position.coords.longitude;
         filters.location.lat = userLat;
         filters.location.lng = userLng;
-        enableSearchButton();
-        showNotification('Géolocalisation activée !', 'success');
+        document.getElementById('search-button').disabled = false;
       },
       (error) => {
         console.error('Erreur de géolocalisation:', error);
-        showNotification('Impossible d\'obtenir votre position. Utilisez une ville manuellement.', 'error');
+        document.getElementById('city-input').focus();
       }
     );
-  } else {
-    showNotification('La géolocalisation n\'est pas supportée par votre navigateur.', 'error');
   }
-}
-
-function enableSearchButton() {
-  const hasLocation = filters.location.lat !== null || filters.location.city !== null;
-  document.getElementById('search-button').disabled = !hasLocation;
 }
 
 document.getElementById('use-gps').addEventListener('click', initGeolocation);
 document.getElementById('city-input').addEventListener('change', () => {
   filters.location.city = document.getElementById('city-input').value;
-  enableSearchButton();
+  document.getElementById('search-button').disabled = !filters.location.city;
 });
-
-window.userLat = userLat;
-window.userLng = userLng;

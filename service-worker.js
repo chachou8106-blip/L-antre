@@ -5,13 +5,9 @@ const urlsToCache = [
   '/manifest.json',
   '/styles/main.css',
   '/scripts/app.js',
-  '/scripts/geolocation.js',
-  '/scripts/scraping.js',
   '/scripts/filters.js',
-  '/scripts/notifications.js',
-  '/scripts/history.js',
-  '/scripts/favorites.js',
-  '/assets/default-profile.png'
+  '/scripts/geolocation.js',
+  '/scripts/scraping.js'
 ];
 
 self.addEventListener('install', event => {
@@ -25,20 +21,5 @@ self.addEventListener('fetch', event => {
   event.respondWith(
     caches.match(event.request)
       .then(response => response || fetch(event.request))
-  );
-});
-
-self.addEventListener('activate', event => {
-  const cacheWhitelist = [CACHE_NAME];
-  event.waitUntil(
-    caches.keys().then(cacheNames => {
-      return Promise.all(
-        cacheNames.map(cacheName => {
-          if (!cacheWhitelist.includes(cacheName)) {
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    })
   );
 });
