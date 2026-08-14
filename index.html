@@ -20,20 +20,31 @@
         <!-- Section Géolocalisation -->
         <div class="section">
             <h2><i class="fas fa-map-marker-alt"></i> Localisation</h2>
-            <button id="use-gps" class="btn btn-primary">
-                <i class="fas fa-location-arrow"></i> Utiliser ma position GPS
-            </button>
-            <div class="or-separator">OU</div>
-            <div class="manual-location">
-                <input type="text" id="city-input" placeholder="Entrez une ville (ex: Paris)">
-                <select id="radius-select">
-                    <option value="5">5 km</option>
-                    <option value="10">10 km</option>
-                    <option value="25">25 km</option>
-                    <option value="50" selected>50 km</option>
-                    <option value="100">100 km</option>
-                    <option value="200">200 km</option>
-                </select>
+            <div class="location-options">
+                <button id="use-gps" class="btn btn-primary">
+                    <i class="fas fa-location-arrow"></i> Utiliser ma position GPS
+                </button>
+                <div class="or-separator">OU</div>
+                <div class="manual-location">
+                    <input type="text" id="city-input" placeholder="Entrez une ville (ex: Paris)">
+                    <select id="country-select">
+                        <option value="fr" selected>France</option>
+                        <option value="be">Belgique</option>
+                        <option value="ch">Suisse</option>
+                        <option value="ca">Canada</option>
+                    </select>
+                </div>
+                <div class="radius-selector">
+                    <label for="radius-select">Rayon :</label>
+                    <select id="radius-select">
+                        <option value="5">5 km</option>
+                        <option value="10">10 km</option>
+                        <option value="25">25 km</option>
+                        <option value="50" selected>50 km</option>
+                        <option value="100">100 km</option>
+                        <option value="200">200 km</option>
+                    </select>
+                </div>
             </div>
         </div>
 
@@ -46,8 +57,11 @@
                 <select id="gender-select" multiple>
                     <option value="Femme" selected>Femme</option>
                     <option value="Homme">Homme</option>
-                    <option value="Trans">Trans</option>
+                    <option value="Trans (F→H)">Trans (Femme → Homme)</option>
+                    <option value="Trans (H→F)">Trans (Homme → Femme)</option>
+                    <option value="Non-binaire">Non-binaire</option>
                     <option value="Couple">Couple</option>
+                    <option value="Groupe">Groupe</option>
                 </select>
             </div>
 
@@ -55,8 +69,14 @@
                 <h3><i class="fas fa-theater-masks"></i> Rôle BDSM</h3>
                 <select id="role-select" multiple>
                     <option value="Dominatrice" selected>Dominatrice</option>
+                    <option value="Dominant">Dominant</option>
+                    <option value="Soumise">Soumise</option>
                     <option value="Soumis" selected>Soumis</option>
                     <option value="Switch">Switch</option>
+                    <option value="Amatrice" selected>Amatrice</option>
+                    <option value="Amateur">Amateur</option>
+                    <option value="Maîtresse">Maîtresse</option>
+                    <option value="Esclave">Esclave</option>
                 </select>
             </div>
 
@@ -64,8 +84,18 @@
                 <h3><i class="fas fa-fire"></i> Pratiques</h3>
                 <div class="checkbox-grid">
                     <label><input type="checkbox" name="practice" value="Sodomie" checked> Sodomie</label>
-                    <label><input type="checkbox" name="practice" value="Femdom" checked> Femdom</label>
+                    <label><input type="checkbox" name="practice" value="Anal" checked> Anal</label>
                     <label><input type="checkbox" name="practice" value="Bondage"> Bondage</label>
+                    <label><input type="checkbox" name="practice" value="Fellation"> Fellation</label>
+                    <label><input type="checkbox" name="practice" value="Femdom" checked> Femdom</label>
+                    <label><input type="checkbox" name="practice" value="Humiliation"> Humiliation</label>
+                    <label><input type="checkbox" name="practice" value="Exhibitionnisme"> Exhibitionnisme</label>
+                    <label><input type="checkbox" name="practice" value="Pénétration" checked> Pénétration</label>
+                    <label><input type="checkbox" name="practice" value="Jeux de rôle"> Jeux de rôle</label>
+                    <label><input type="checkbox" name="practice" value="Fessée"> Fessée</label>
+                    <label><input type="checkbox" name="practice" value="Menottes"> Menottes</label>
+                    <label><input type="checkbox" name="practice" value="Collier"> Collier</label>
+                    <label><input type="checkbox" name="practice" value="Gangbang"> Gangbang</label>
                 </div>
             </div>
 
@@ -73,10 +103,54 @@
                 <h3><i class="fas fa-user"></i> Attributs Physiques</h3>
                 <div class="checkbox-grid">
                     <label><input type="checkbox" name="attribute" value="Gros seins" checked> Gros seins</label>
+                    <label><input type="checkbox" name="attribute" value="Petits seins"> Petits seins</label>
+                    <label><input type="checkbox" name="attribute" value="Naturels"> Naturels</label>
+                    <label><input type="checkbox" name="attribute" value="Siliconés"> Siliconés</label>
+                    <label><input type="checkbox" name="attribute" value="Minces"> Minces</label>
+                    <label><input type="checkbox" name="attribute" value="Athlétiques"> Athlétiques</label>
+                    <label><input type="checkbox" name="attribute" value="BBW"> BBW</label>
+                    <label><input type="checkbox" name="attribute" value="Grandes fesses"> Grandes fesses</label>
+                    <label><input type="checkbox" name="attribute" value="Blonde"> Blonde</label>
+                    <label><input type="checkbox" name="attribute" value="Brune"> Brune</label>
+                    <label><input type="checkbox" name="attribute" value="Rousse"> Rousse</label>
+                    <label><input type="checkbox" name="attribute" value="Tatouages"> Tatouages</label>
+                    <label><input type="checkbox" name="attribute" value="Piercings"> Piercings</label>
                 </div>
             </div>
 
-            <button id="search-button" class="btn btn-primary" disabled>
+            <div class="filter-group">
+                <h3><i class="fas fa-birthday-cake"></i> Âge</h3>
+                <div class="range-slider">
+                    <div class="range-values">
+                        <span id="age-min-value">18</span>
+                        <span>à</span>
+                        <span id="age-max-value">99</span>
+                        <span>ans</span>
+                    </div>
+                    <input type="range" id="age-min" min="18" max="99" value="18">
+                    <input type="range" id="age-max" min="18" max="99" value="99">
+                </div>
+            </div>
+
+            <div class="filter-group">
+                <h3><i class="fas fa-sort"></i> Options de Tri</h3>
+                <select id="sort-select">
+                    <option value="recent" selected>Plus récents</option>
+                    <option value="distance">Plus proches</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <h3><i class="fas fa-ban"></i> Exclusions</h3>
+                <div class="checkbox-list">
+                    <label><input type="checkbox" id="exclude-pros" checked> Exclure les profils professionnels</label>
+                    <label><input type="checkbox" id="exclude-verified"> Exclure les comptes vérifiés</label>
+                    <label><input type="checkbox" id="exclude-no-pic"> Exclure les profils sans photo</label>
+                    <label><input type="checkbox" id="exclude-old" checked> Exclure les profils inactifs (> 1 mois)</label>
+                </div>
+            </div>
+
+            <button id="search-button" class="btn btn-primary btn-large" disabled>
                 <i class="fas fa-search"></i> Lancer la Recherche
             </button>
         </div>
@@ -84,13 +158,49 @@
         <!-- Section Résultats -->
         <div class="section">
             <h2><i class="fas fa-list"></i> Résultats (<span id="result-count">0</span>)</h2>
+            <div class="search-options">
+                <button id="refresh-button" class="btn btn-secondary">
+                    <i class="fas fa-sync-alt"></i> Actualiser
+                </button>
+                <button id="clear-results" class="btn btn-secondary">
+                    <i class="fas fa-trash"></i> Effacer
+                </button>
+            </div>
             <div id="results" class="results-grid"></div>
+        </div>
+
+        <!-- Section Favoris -->
+        <div class="section">
+            <h2><i class="fas fa-heart"></i> Favoris (<span id="favorites-count">0</span>)</h2>
+            <div id="favorites" class="results-grid"></div>
+        </div>
+
+        <!-- Section Historique -->
+        <div class="section">
+            <h2><i class="fas fa-history"></i> Historique des Recherches</h2>
+            <div id="history" class="history-list"></div>
         </div>
     </div>
 
+    <footer>
+        <p><i class="fas fa-lock"></i> L'Antre - Application personnelle et discrète | <a href="#" id="clear-all-data">Effacer mes données</a></p>
+    </footer>
+
+    <!-- Modale pour les détails d'un profil -->
+    <div id="profile-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <div id="modal-body"></div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
     <script src="scripts/filters.js"></script>
     <script src="scripts/geolocation.js"></script>
     <script src="scripts/scraping.js"></script>
+    <script src="scripts/notifications.js"></script>
+    <script src="scripts/history.js"></script>
+    <script src="scripts/favorites.js"></script>
     <script src="scripts/app.js"></script>
 </body>
 </html>
