@@ -323,7 +323,7 @@ header p {
   font-size: 0.9rem;
 }
 
-.result-info .bio {
+.bio {
   max-height: 100px;
   overflow-y: auto;
 }
@@ -376,10 +376,6 @@ header p {
 
 .favorite-button.favorited {
   background-color: var(--primary-color);
-}
-
-.favorite-button i {
-  font-size: 0.9rem;
 }
 
 /* ===== Historique ===== */
