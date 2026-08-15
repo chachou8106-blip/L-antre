@@ -89,8 +89,6 @@ function updateFilters() {
   filters.excludeVerified = document.getElementById('exclude-verified')?.checked || false;
   filters.excludeNoPic = document.getElementById('exclude-no-pic')?.checked || false;
   filters.excludeOld = document.getElementById('exclude-old')?.checked || true;
-  
-  console.log('Filtres mis à jour:', filters);
 }
 
 /**
@@ -142,7 +140,7 @@ function buildRedditQuery() {
  * @returns {string} - Requête pour Google Maps
  */
 function buildGoogleMapsQuery() {
-  const { practices, attributes, location } = filters;
+  const { practices, attributes } = filters;
   let query = [];
   
   if (practices.length > 0) {
@@ -240,78 +238,9 @@ function matchesFilters(profile) {
   return true;
 }
 
-/**
- * Charge des filtres prédéfinis
- * @param {string} presetName - Le nom du preset à charger
- */
-function loadPresetFilters(presetName) {
-  const presets = {
-    'dominatrice-amatrice': {
-      gender: ['Femme'],
-      role: ['Dominatrice', 'Amatrice'],
-      practices: ['Sodomie', 'Femdom', 'Humiliation'],
-      attributes: ['Gros seins'],
-      ageMin: 25,
-      ageMax: 50
-    },
-    'soumis-recherche': {
-      gender: ['Femme', 'Homme', 'Trans'],
-      role: ['Dominatrice', 'Dominant', 'Soumise', 'Soumis'],
-      practices: ['Sodomie', 'Bondage', 'Fellation'],
-      attributes: [],
-      ageMin: 18,
-      ageMax: 60
-    }
-  };
-  
-  if (presets[presetName]) {
-    const preset = presets[presetName];
-    
-    // Mettre à jour les sélecteurs
-    if (document.getElementById('gender-select')) {
-      const genderSelect = document.getElementById('gender-select');
-      Array.from(genderSelect.options).forEach(option => {
-        option.selected = preset.gender.includes(option.value);
-      });
-    }
-    
-    if (document.getElementById('role-select')) {
-      const roleSelect = document.getElementById('role-select');
-      Array.from(roleSelect.options).forEach(option => {
-        option.selected = preset.role.includes(option.value);
-      });
-    }
-    
-    if (document.querySelectorAll('input[name="practice"]').length > 0) {
-      document.querySelectorAll('input[name="practice"]').forEach(checkbox => {
-        checkbox.checked = preset.practices.includes(checkbox.value);
-      });
-    }
-    
-    if (document.querySelectorAll('input[name="attribute"]').length > 0) {
-      document.querySelectorAll('input[name="attribute"]').forEach(checkbox => {
-        checkbox.checked = preset.attributes.includes(checkbox.value);
-      });
-    }
-    
-    if (document.getElementById('age-min') && document.getElementById('age-max')) {
-      document.getElementById('age-min').value = preset.ageMin;
-      document.getElementById('age-max').value = preset.ageMax;
-      if (document.getElementById('age-min-value') && document.getElementById('age-max-value')) {
-        document.getElementById('age-min-value').textContent = preset.ageMin;
-        document.getElementById('age-max-value').textContent = preset.ageMax;
-      }
-    }
-    
-    updateFilters();
-    showNotification(`Filtres prédéfinis "${presetName}" chargés !`, 'success');
-  }
-}
-
 // Exporter les variables et fonctions pour les autres scripts
 window.filters = filters;
 window.updateFilters = updateFilters;
 window.buildRedditQuery = buildRedditQuery;
 window.buildGoogleMapsQuery = buildGoogleMapsQuery;
 window.matchesFilters = matchesFilters;
-window.loadPresetFilters = loadPresetFilters;
