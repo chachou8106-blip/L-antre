@@ -1,424 +1,276 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#ff2d75">
-    <title>L'Antre - Trouvez vos plans</title>
-    <link rel="manifest" href="manifest.json">
-    <link rel="stylesheet" href="styles/main.css">
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.11.0"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        /* Styles pour la modale */
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 10000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.8);
-            overflow: auto;
-        }
-        .modal-content {
-            background-color: #2d2d2d;
-            margin: 5% auto;
-            padding: 2rem;
-            border-radius: 8px;
-            max-width: 800px;
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
-            position: relative;
-        }
-        .close-modal {
-            position: absolute;
-            right: 1rem;
-            top: 1rem;
-            font-size: 2rem;
-            font-weight: bold;
-            color: #a0a0a0;
-            cursor: pointer;
-        }
-        .close-modal:hover {
-            color: #ff2d75;
-        }
-        #modal-body img {
-            max-width: 100%;
-            border-radius: 8px;
-            margin-bottom: 1rem;
-        }
-        #modal-body h2 {
-            color: #ff2d75;
-            margin-bottom: 1rem;
-        }
-        #modal-body p {
-            margin-bottom: 0.5rem;
-            color: #e0e0e0;
-        }
-        #modal-body strong {
-            color: #a0a0a0;
-        }
-        #modal-body a {
-            color: #ff2d75;
-            text-decoration: none;
-        }
-        #modal-body a:hover {
-            text-decoration: underline;
-        }
-        
-        /* Styles pour les notifications */
-        .notification {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background-color: #2d2d2d;
-            color: #e0e0e0;
-            padding: 12px 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-            z-index: 10000;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            max-width: 350px;
-            animation: slideIn 0.3s ease-out;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        .notification.success {
-            border-left: 4px solid #4caf50;
-        }
-        .notification.error {
-            border-left: 4px solid #f44336;
-        }
-        .notification.info {
-            border-left: 4px solid #ff2d75;
-        }
-        @keyframes slideIn {
-            from { transform: translateX(120%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-        
-        /* Styles pour le chargement */
-        .loading {
-            text-align: center;
-            padding: 2rem;
-            color: #a0a0a0;
-        }
-        .spinner {
-            border: 4px solid rgba(255, 45, 117, 0.2);
-            border-radius: 50%;
-            border-top: 4px solid #ff2d75;
-            width: 50px;
-            height: 50px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 1rem;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        /* Styles pour les cartes de résultats */
-        .result-card {
-            background-color: #1a1a1a;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-            transition: transform 0.2s, box-shadow 0.2s;
-            cursor: pointer;
-            position: relative;
-            margin-bottom: 1rem;
-        }
-        .result-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.5);
-        }
-        .result-card img {
-            width: 100%;
-            height: 200px;
-            object-fit: cover;
-            background-color: #404040;
-        }
-        .result-info {
-            padding: 1rem;
-        }
-        .result-info h3 {
-            color: #ff2d75;
-            margin-bottom: 0.5rem;
-        }
-        .result-info p {
-            color: #a0a0a0;
-            margin-bottom: 0.5rem;
-        }
-        .bio {
-            max-height: 100px;
-            overflow-y: auto;
-        }
-        .result-meta {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-            margin: 0.5rem 0;
-            font-size: 0.8rem;
-        }
-        .result-meta span {
-            background-color: #2d2d2d;
-            padding: 0.2rem 0.5rem;
-            border-radius: 4px;
-        }
-        .favorite-button {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background-color: rgba(0, 0, 0, 0.7);
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 36px;
-            height: 36px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 10;
-        }
-        .favorite-button:hover {
-            background-color: #ff2d75;
-        }
-        .favorite-button.favorited {
-            background-color: #ff2d75;
-        }
-        
-        /* Styles pour l'historique */
-        .history-list {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-        }
-        .history-item {
-            background-color: #1a1a1a;
-            padding: 1rem;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-        .history-item:hover {
-            background-color: #404040;
-        }
-        .history-header {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 0.5rem;
-        }
-        .history-date {
-            color: #a0a0a0;
-            font-size: 0.9rem;
-        }
-        .history-count {
-            color: #ff2d75;
-            font-weight: bold;
-        }
-        .history-filters {
-            font-size: 0.9rem;
-            color: #a0a0a0;
-        }
-        .history-filters p {
-            margin: 0.2rem 0;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#ff2d75">
+  <meta name="referrer" content="no-referrer">
+  <meta name="robots" content="noindex, nofollow">
+  <title>L'Antre</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="assets/icons/icon-192x192.png">
+  <link rel="apple-touch-icon" href="assets/icons/icon-192x192.png">
+  <link rel="stylesheet" href="styles/main.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-    <header>
-        <h1><i class="fas fa-door-open"></i> L'Antre</h1>
-        <p>Trouvez des partenaires près de vous, selon vos envies</p>
-    </header>
 
-    <div class="container">
-        <!-- Section Géolocalisation -->
-        <div class="section">
-            <h2><i class="fas fa-map-marker-alt"></i> Localisation</h2>
-            <div class="location-options">
-                <button id="use-gps" class="btn btn-primary">
-                    <i class="fas fa-location-arrow"></i> Utiliser ma position GPS
-                </button>
-                <div class="or-separator">OU</div>
-                <div class="manual-location">
-                    <input type="text" id="city-input" placeholder="Entrez une ville (ex: Paris)">
-                    <select id="country-select">
-                        <option value="fr" selected>France</option>
-                        <option value="be">Belgique</option>
-                        <option value="ch">Suisse</option>
-                        <option value="ca">Canada</option>
-                    </select>
-                </div>
-                <div class="radius-selector">
-                    <label for="radius-select">Rayon :</label>
-                    <select id="radius-select">
-                        <option value="5">5 km</option>
-                        <option value="10">10 km</option>
-                        <option value="25">25 km</option>
-                        <option value="50" selected>50 km</option>
-                        <option value="100">100 km</option>
-                        <option value="200">200 km</option>
-                    </select>
-                </div>
-            </div>
-        </div>
+<header class="app-header">
+  <h1>L'Antre</h1>
+  <p class="tagline">Annonces réelles, publiées publiquement. Sans compte, sans serveur.</p>
+</header>
 
-        <!-- Section Filtres -->
-        <div class="section">
-            <h2><i class="fas fa-filter"></i> Filtres de Recherche</h2>
-            
-            <div class="filter-group">
-                <h3><i class="fas fa-venus-mars"></i> Genre</h3>
-                <select id="gender-select" multiple>
-                    <option value="Femme" selected>Femme</option>
-                    <option value="Homme">Homme</option>
-                    <option value="Trans (F→H)">Trans (Femme → Homme)</option>
-                    <option value="Trans (H→F)">Trans (Homme → Femme)</option>
-                    <option value="Non-binaire">Non-binaire</option>
-                    <option value="Couple">Couple</option>
-                    <option value="Groupe">Groupe</option>
-                </select>
-            </div>
+<main class="app-main">
 
-            <div class="filter-group">
-                <h3><i class="fas fa-theater-masks"></i> Rôle BDSM</h3>
-                <select id="role-select" multiple>
-                    <option value="Dominatrice" selected>Dominatrice</option>
-                    <option value="Dominant">Dominant</option>
-                    <option value="Soumise">Soumise</option>
-                    <option value="Soumis" selected>Soumis</option>
-                    <option value="Switch">Switch</option>
-                    <option value="Amatrice" selected>Amatrice</option>
-                    <option value="Amateur">Amateur</option>
-                    <option value="Maîtresse">Maîtresse</option>
-                    <option value="Esclave">Esclave</option>
-                </select>
-            </div>
+  <!-- ------------------------------------------------------------------ -->
+  <section class="panel" id="panel-location">
+    <h2><i class="fas fa-location-dot" aria-hidden="true"></i> Où</h2>
 
-            <div class="filter-group">
-                <h3><i class="fas fa-fire"></i> Pratiques</h3>
-                <div class="checkbox-grid">
-                    <label><input type="checkbox" name="practice" value="Sodomie" checked> Sodomie</label>
-                    <label><input type="checkbox" name="practice" value="Anal" checked> Anal</label>
-                    <label><input type="checkbox" name="practice" value="Bondage"> Bondage</label>
-                    <label><input type="checkbox" name="practice" value="Fellation"> Fellation</label>
-                    <label><input type="checkbox" name="practice" value="Femdom" checked> Femdom</label>
-                    <label><input type="checkbox" name="practice" value="Humiliation"> Humiliation</label>
-                    <label><input type="checkbox" name="practice" value="Exhibitionnisme"> Exhibitionnisme</label>
-                    <label><input type="checkbox" name="practice" value="Pénétration" checked> Pénétration</label>
-                    <label><input type="checkbox" name="practice" value="Jeux de rôle"> Jeux de rôle</label>
-                    <label><input type="checkbox" name="practice" value="Fessée"> Fessée</label>
-                    <label><input type="checkbox" name="practice" value="Menottes"> Menottes</label>
-                    <label><input type="checkbox" name="practice" value="Collier"> Collier</label>
-                    <label><input type="checkbox" name="practice" value="Gangbang"> Gangbang</label>
-                </div>
-            </div>
-
-            <div class="filter-group">
-                <h3><i class="fas fa-user"></i> Attributs Physiques</h3>
-                <div class="checkbox-grid">
-                    <label><input type="checkbox" name="attribute" value="Gros seins" checked> Gros seins</label>
-                    <label><input type="checkbox" name="attribute" value="Petits seins"> Petits seins</label>
-                    <label><input type="checkbox" name="attribute" value="Naturels"> Naturels</label>
-                    <label><input type="checkbox" name="attribute" value="Siliconés"> Siliconés</label>
-                    <label><input type="checkbox" name="attribute" value="Minces"> Minces</label>
-                    <label><input type="checkbox" name="attribute" value="Athlétiques"> Athlétiques</label>
-                    <label><input type="checkbox" name="attribute" value="BBW"> BBW</label>
-                    <label><input type="checkbox" name="attribute" value="Grandes fesses"> Grandes fesses</label>
-                    <label><input type="checkbox" name="attribute" value="Blonde"> Blonde</label>
-                    <label><input type="checkbox" name="attribute" value="Brune"> Brune</label>
-                    <label><input type="checkbox" name="attribute" value="Rousse"> Rousse</label>
-                    <label><input type="checkbox" name="attribute" value="Tatouages"> Tatouages</label>
-                    <label><input type="checkbox" name="attribute" value="Piercings"> Piercings</label>
-                </div>
-            </div>
-
-            <div class="filter-group">
-                <h3><i class="fas fa-birthday-cake"></i> Âge</h3>
-                <div class="range-slider">
-                    <div class="range-values">
-                        <span id="age-min-value">18</span>
-                        <span>à</span>
-                        <span id="age-max-value">99</span>
-                        <span>ans</span>
-                    </div>
-                    <input type="range" id="age-min" min="18" max="99" value="18">
-                    <input type="range" id="age-max" min="18" max="99" value="99">
-                </div>
-            </div>
-
-            <div class="filter-group">
-                <h3><i class="fas fa-sort"></i> Options de Tri</h3>
-                <select id="sort-select">
-                    <option value="recent" selected>Plus récents</option>
-                    <option value="distance">Plus proches</option>
-                </select>
-            </div>
-
-            <div class="filter-group">
-                <h3><i class="fas fa-ban"></i> Exclusions</h3>
-                <div class="checkbox-list">
-                    <label><input type="checkbox" id="exclude-pros" checked> Exclure les profils professionnels</label>
-                    <label><input type="checkbox" id="exclude-verified"> Exclure les comptes vérifiés</label>
-                    <label><input type="checkbox" id="exclude-no-pic"> Exclure les profils sans photo</label>
-                    <label><input type="checkbox" id="exclude-old" checked> Exclure les profils inactifs (> 1 mois)</label>
-                </div>
-            </div>
-
-            <button id="search-button" class="btn btn-primary btn-large" disabled>
-                <i class="fas fa-search"></i> Lancer la Recherche
-            </button>
-        </div>
-
-        <!-- Section Résultats -->
-        <div class="section">
-            <h2><i class="fas fa-list"></i> Résultats (<span id="result-count">0</span>)</h2>
-            <div class="search-options">
-                <button id="refresh-button" class="btn btn-secondary">
-                    <i class="fas fa-sync-alt"></i> Actualiser
-                </button>
-                <button id="clear-results" class="btn btn-secondary">
-                    <i class="fas fa-trash"></i> Effacer
-                </button>
-            </div>
-            <div id="results" class="results-grid"></div>
-        </div>
-
-        <!-- Section Favoris -->
-        <div class="section">
-            <h2><i class="fas fa-heart"></i> Favoris (<span id="favorites-count">0</span>)</h2>
-            <div id="favorites" class="results-grid"></div>
-        </div>
-
-        <!-- Section Historique -->
-        <div class="section">
-            <h2><i class="fas fa-history"></i> Historique des Recherches</h2>
-            <div id="history" class="history-list"></div>
-        </div>
+    <div class="field-row">
+      <button type="button" id="use-gps" class="btn btn-primary">
+        <i class="fas fa-crosshairs" aria-hidden="true"></i> Utiliser ma position
+      </button>
+      <span id="position-label" class="position-label">Aucune position définie</span>
     </div>
 
-    <footer>
-        <p><i class="fas fa-lock"></i> L'Antre - Application personnelle et discrète | <a href="#" id="clear-all-data">Effacer mes données</a></p>
-    </footer>
+    <div class="field-row">
+      <label class="field">
+        <span>Ville</span>
+        <input type="text" id="city-input" placeholder="Ex. Lyon" autocomplete="address-level2">
+      </label>
 
-    <!-- Modale pour les détails d'un profil -->
-    <div id="profile-modal" class="modal">
-        <div class="modal-content">
-            <span class="close-modal">&times;</span>
-            <div id="modal-body"></div>
-        </div>
+      <label class="field">
+        <span>Pays</span>
+        <select id="country-select">
+          <option value="fr" selected>France</option>
+          <option value="be">Belgique</option>
+          <option value="ch">Suisse</option>
+          <option value="lu">Luxembourg</option>
+          <option value="ca">Canada</option>
+          <option value="">Tous</option>
+        </select>
+      </label>
+
+      <label class="field">
+        <span>Rayon</span>
+        <select id="radius-select">
+          <option value="10">10 km</option>
+          <option value="25">25 km</option>
+          <option value="50" selected>50 km</option>
+          <option value="100">100 km</option>
+          <option value="200">200 km</option>
+          <option value="1000">Tout le pays</option>
+        </select>
+      </label>
     </div>
 
-    <!-- Scripts -->
-    <script src="scripts/filters.js"></script>
-    <script src="scripts/geolocation.js"></script>
-    <script src="scripts/scraping.js"></script>
-    <script src="scripts/notifications.js"></script>
-    <script src="scripts/history.js"></script>
-    <script src="scripts/favorites.js"></script>
-    <script src="scripts/app.js"></script>
+    <label class="checkbox">
+      <input type="checkbox" id="only-located" checked>
+      <span>Uniquement les annonces dont le lieu est identifiable</span>
+    </label>
+  </section>
+
+  <!-- ------------------------------------------------------------------ -->
+  <section class="panel" id="panel-filters">
+    <h2><i class="fas fa-sliders" aria-hidden="true"></i> Quoi</h2>
+
+    <fieldset>
+      <legend>Pratiques recherchées</legend>
+      <div class="chip-grid" id="practices">
+        <label class="checkbox"><input type="checkbox" name="keyword" value="libertin"><span>Libertin</span></label>
+        <label class="checkbox"><input type="checkbox" name="keyword" value="bdsm"><span>BDSM</span></label>
+        <label class="checkbox"><input type="checkbox" name="keyword" value="femdom"><span>Femdom</span></label>
+        <label class="checkbox"><input type="checkbox" name="keyword" value="domination"><span>Domination</span></label>
+        <label class="checkbox"><input type="checkbox" name="keyword" value="soumission"><span>Soumission</span></label>
+        <label class="checkbox"><input type="checkbox" name="keyword" value="bondage"><span>Bondage</span></label>
+        <label class="checkbox"><input type="checkbox" name="keyword" value="sodomie"><span>Sodomie</span></label>
+        <label class="checkbox"><input type="checkbox" name="keyword" value="anal"><span>Anal</span></label>
+        <label class="checkbox"><input type="checkbox" name="keyword" value="echangisme"><span>Échangisme</span></label>
+        <label class="checkbox"><input type="checkbox" name="keyword" value="candaulisme"><span>Candaulisme</span></label>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Attributs annoncés dans la description</legend>
+      <div class="chip-grid" id="attributes">
+        <label class="checkbox"><input type="checkbox" name="keyword" value="gros seins"><span>Gros seins</span></label>
+        <label class="checkbox"><input type="checkbox" name="keyword" value="forte poitrine"><span>Forte poitrine</span></label>
+        <label class="checkbox"><input type="checkbox" name="keyword" value="ronde"><span>Ronde</span></label>
+        <label class="checkbox"><input type="checkbox" name="keyword" value="mince"><span>Mince</span></label>
+        <label class="checkbox"><input type="checkbox" name="keyword" value="tatouee"><span>Tatouée</span></label>
+        <label class="checkbox"><input type="checkbox" name="keyword" value="grande"><span>Grande</span></label>
+      </div>
+      <p class="hint">Ces filtres cherchent les mots dans le texte que la personne a écrit elle-même.</p>
+    </fieldset>
+
+    <label class="field">
+      <span>Mots-clés libres (séparés par des virgules)</span>
+      <input type="text" id="free-keywords" placeholder="Ex. week-end, débutante, discrète">
+    </label>
+
+    <div class="field-row">
+      <label class="field">
+        <span>Genre</span>
+        <select id="gender-select" multiple size="4">
+          <option value="Femme">Femme</option>
+          <option value="Homme">Homme</option>
+          <option value="Couple">Couple</option>
+          <option value="Trans">Trans</option>
+        </select>
+      </label>
+
+      <label class="field">
+        <span>Rôle</span>
+        <select id="role-select" multiple size="4">
+          <option value="Dominatrice">Dominatrice</option>
+          <option value="Dominant">Dominant</option>
+          <option value="Soumis">Soumis / Soumise</option>
+          <option value="Switch">Switch</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="field-row">
+      <label class="field">
+        <span>Âge min : <output id="age-min-value">18</output></span>
+        <input type="range" id="age-min" min="18" max="99" value="18">
+      </label>
+      <label class="field">
+        <span>Âge max : <output id="age-max-value">99</output></span>
+        <input type="range" id="age-max" min="18" max="99" value="99">
+      </label>
+    </div>
+
+    <div class="field-row">
+      <label class="field">
+        <span>Annonces publiées depuis</span>
+        <select id="max-age-select">
+          <option value="2">48 heures</option>
+          <option value="7">7 jours</option>
+          <option value="30" selected>30 jours</option>
+          <option value="90">3 mois</option>
+          <option value="0">Sans limite</option>
+        </select>
+      </label>
+
+      <label class="field">
+        <span>Correspondance</span>
+        <select id="match-mode">
+          <option value="souple" selected>Souple (au moins un critère)</option>
+          <option value="stricte">Stricte (tous les critères)</option>
+        </select>
+      </label>
+
+      <label class="field">
+        <span>Trier par</span>
+        <select id="sort-select">
+          <option value="recent" selected>Plus récent</option>
+          <option value="distance">Plus proche</option>
+          <option value="pertinence">Pertinence</option>
+        </select>
+      </label>
+    </div>
+
+    <label class="checkbox">
+      <input type="checkbox" id="exclude-pros" checked>
+      <span>Exclure les annonces commerciales (tarifs, escorting, contenu payant)</span>
+    </label>
+  </section>
+
+  <!-- ------------------------------------------------------------------ -->
+  <section class="panel" id="panel-sources">
+    <h2><i class="fas fa-database" aria-hidden="true"></i> Sources</h2>
+    <p class="hint">
+      Toutes ces sources sont des APIs publiques interrogées en direct depuis ton
+      navigateur, sans compte ni clé. Les annonces affichées sont celles réellement
+      publiées par leurs auteurs.
+    </p>
+    <div class="chip-grid">
+      <label class="checkbox"><input type="checkbox" name="source" value="reddit" checked><span>Reddit</span></label>
+      <label class="checkbox"><input type="checkbox" name="source" value="bluesky" checked><span>Bluesky</span></label>
+      <label class="checkbox"><input type="checkbox" name="source" value="lemmy" checked><span>Lemmy</span></label>
+      <label class="checkbox"><input type="checkbox" name="source" value="mastodon" checked><span>Mastodon</span></label>
+    </div>
+  </section>
+
+  <!-- ------------------------------------------------------------------ -->
+  <div class="action-bar">
+    <button type="button" id="search-button" class="btn btn-primary btn-large" disabled>
+      <i class="fas fa-magnifying-glass" aria-hidden="true"></i> Lancer la recherche
+    </button>
+    <button type="button" id="clear-results" class="btn btn-ghost">Effacer les résultats</button>
+  </div>
+
+  <!-- ------------------------------------------------------------------ -->
+  <section class="panel" id="panel-results">
+    <h2>
+      <i class="fas fa-users" aria-hidden="true"></i> Résultats
+      <span class="counter" id="result-count">0</span>
+    </h2>
+    <div id="results">
+      <p class="no-results">Définis une position, puis lance la recherche.</p>
+    </div>
+  </section>
+
+  <section class="panel collapsible" id="panel-diagnostics">
+    <h2><i class="fas fa-stethoscope" aria-hidden="true"></i> État des sources</h2>
+    <div id="diagnostics">
+      <p class="hint">Le détail de chaque source apparaîtra ici après une recherche.</p>
+    </div>
+  </section>
+
+  <section class="panel collapsible" id="panel-external">
+    <h2><i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i> Recherches externes</h2>
+    <p class="hint">
+      FetLife, OkCupid et les sites d'annonces classiques exigent un compte et
+      bloquent les requêtes automatiques : impossible d'en extraire des profils
+      depuis une page web. Ces liens ouvrent la recherche réelle, pré-remplie
+      avec tes critères.
+    </p>
+    <div id="external-links" class="external-links"></div>
+  </section>
+
+  <section class="panel collapsible" id="panel-favorites">
+    <h2>
+      <i class="fas fa-heart" aria-hidden="true"></i> Favoris
+      <span class="counter" id="favorites-count">0</span>
+    </h2>
+    <div id="favorites"></div>
+  </section>
+
+  <section class="panel collapsible" id="panel-history">
+    <h2><i class="fas fa-clock-rotate-left" aria-hidden="true"></i> Historique</h2>
+    <div id="history"></div>
+    <button type="button" id="clear-all-data" class="btn btn-ghost">
+      Effacer toutes mes données locales
+    </button>
+  </section>
+
+</main>
+
+<div class="modal" id="profile-modal" aria-hidden="true" role="dialog" aria-modal="true">
+  <div class="modal-content">
+    <button type="button" class="close-modal" aria-label="Fermer">&times;</button>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<script src="scripts/config.js"></script>
+<script src="scripts/cities.js"></script>
+<script src="scripts/util.js"></script>
+<script src="scripts/notifications.js"></script>
+<script src="scripts/filters.js"></script>
+<script src="scripts/geo.js"></script>
+<script src="scripts/sources/base.js"></script>
+<script src="scripts/sources/reddit.js"></script>
+<script src="scripts/sources/bluesky.js"></script>
+<script src="scripts/sources/lemmy.js"></script>
+<script src="scripts/sources/mastodon.js"></script>
+<script src="scripts/search.js"></script>
+<script src="scripts/render.js"></script>
+<script src="scripts/favorites.js"></script>
+<script src="scripts/history.js"></script>
+<script src="scripts/app.js"></script>
+
 </body>
 </html>

@@ -1,21 +1,27 @@
 {
+  "id": "/l-antre/",
   "name": "L'Antre",
   "short_name": "LAntre",
-  "description": "Trouvez des partenaires près de vous, selon vos envies.",
+  "description": "Annonces réelles publiées publiquement, filtrées par distance et critères. Sans compte.",
   "start_url": ".",
+  "scope": ".",
   "display": "standalone",
-  "background_color": "#1a1a1a",
+  "orientation": "portrait",
+  "background_color": "#141317",
   "theme_color": "#ff2d75",
+  "lang": "fr",
   "icons": [
     {
       "src": "assets/icons/icon-192x192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
       "src": "assets/icons/icon-512x512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     }
   ]
 }

@@ -1,80 +1,53 @@
-// Gestion des notifications dans l'application
+// Notifications éphémères de L'Antre.
+// Le message peut contenir du texte venu d'une source externe : il est donc
+// inséré via textContent, jamais via innerHTML.
+
+const ICONS = {
+  success: 'check-circle',
+  error: 'exclamation-circle',
+  warning: 'exclamation-triangle',
+  info: 'info-circle'
+};
+
+let notificationHost = null;
+
+function ensureHost() {
+  if (notificationHost && document.body.contains(notificationHost)) return notificationHost;
+  notificationHost = document.createElement('div');
+  notificationHost.className = 'notification-host';
+  notificationHost.setAttribute('role', 'status');
+  notificationHost.setAttribute('aria-live', 'polite');
+  document.body.appendChild(notificationHost);
+  return notificationHost;
+}
 
 /**
- * Affiche une notification temporaire à l'écran
- * @param {string} message - Le message à afficher
- * @param {string} type - Le type de notification (success, error, info)
+ * Affiche une notification temporaire.
+ * @param {string} message texte affiché
+ * @param {'success'|'error'|'warning'|'info'} type
  */
 function showNotification(message, type = 'info') {
-  // Créer l'élément de notification
+  const host = ensureHost();
+
   const notification = document.createElement('div');
   notification.className = `notification ${type}`;
-  notification.innerHTML = `
-    <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
-    <span>${message}</span>
-  `;
-  
-  // Ajouter la notification au body
-  document.body.appendChild(notification);
-  
-  // Supprimer la notification après 5 secondes
+
+  const icon = document.createElement('i');
+  icon.className = `fas fa-${ICONS[type] || ICONS.info}`;
+  icon.setAttribute('aria-hidden', 'true');
+
+  const label = document.createElement('span');
+  label.textContent = message;
+
+  notification.append(icon, label);
+  host.appendChild(notification);
+
   setTimeout(() => {
     notification.classList.add('fade-out');
     setTimeout(() => notification.remove(), 500);
   }, 5000);
+
+  return notification;
 }
 
-// Ajouter les styles pour les notifications si ce n'est pas déjà fait
-const notificationStyles = document.createElement('style');
-notificationStyles.textContent = `
-  .notification {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    background-color: #2d2d2d;
-    color: #e0e0e0;
-    padding: 12px 20px;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-    z-index: 10000;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    max-width: 350px;
-    animation: slideIn 0.3s ease-out;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  }
-  
-  .notification.success {
-    border-left: 4px solid #4caf50;
-  }
-  
-  .notification.error {
-    border-left: 4px solid #f44336;
-  }
-  
-  .notification.info {
-    border-left: 4px solid #2196f3;
-  }
-  
-  .notification.fade-out {
-    opacity: 0;
-    transform: translateX(120%);
-    transition: all 0.5s ease-out;
-  }
-  
-  @keyframes slideIn {
-    from {
-      transform: translateX(120%);
-      opacity: 0;
-    }
-    to {
-      transform: translateX(0);
-      opacity: 1;
-    }
-  }
-`;
-document.head.appendChild(notificationStyles);
-
-// Exporter la fonction pour les autres scripts
-window.showNotification = showNotification;
+if (typeof window !== 'undefined') window.showNotification = showNotification;

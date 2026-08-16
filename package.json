@@ -1,0 +1,12 @@
+{
+  "name": "l-antre",
+  "version": "2.0.0",
+  "private": true,
+  "description": "PWA statique agrégeant des annonces réelles depuis des APIs publiques, sans compte ni serveur.",
+  "scripts": {
+    "test": "node tests/run-tests.js",
+    "test:browser": "node tests/browser-test.js",
+    "serve": "npx http-server . -p 8080 -c-1"
+  },
+  "license": "SEE LICENSE IN LICENSE"
+}
