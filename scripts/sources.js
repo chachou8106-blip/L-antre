@@ -198,12 +198,34 @@ const SOURCES = [
   },
   {
     id: 'fetlife',
-    name: 'FetLife',
+    name: 'FetLife — profils',
     icon: 'fas fa-mask',
-    note: 'Recherche FetLife (compte requis) — les CGU interdisent l’extraction automatique.',
+    note: 'Recherche de kinksters sur ta ville et tes critères. Connecté, la page '
+      + 's’ouvre directement sur les résultats.',
     searchUrl() {
-      const terms = [...keywordTerms(4), locationCityOrEmpty()].filter(Boolean).join(' ');
+      const terms = [locationCityOrEmpty(), ...keywordTerms(3)].filter(Boolean).join(' ');
       return `https://fetlife.com/search?q=${encodeURIComponent(terms || 'bdsm')}`;
+    }
+  },
+  {
+    id: 'fetlife-groups',
+    name: 'FetLife — groupes',
+    icon: 'fas fa-users',
+    note: 'Les groupes régionaux sont le meilleur point d’entrée : on y annonce '
+      + 'les rencontres et on y écrit sans être un inconnu.',
+    searchUrl() {
+      const terms = [locationCityOrEmpty(), socialTheme()].filter(Boolean).join(' ');
+      return `https://fetlife.com/groups/search?q=${encodeURIComponent(terms || 'bdsm')}`;
+    }
+  },
+  {
+    id: 'fetlife-events',
+    name: 'FetLife — événements',
+    icon: 'fas fa-calendar-days',
+    note: 'Soirées et munchs à venir. FetLife les liste selon la ville de ton '
+      + 'profil : renseigne-la pour que la liste corresponde à ta zone.',
+    searchUrl() {
+      return 'https://fetlife.com/events';
     }
   },
   {

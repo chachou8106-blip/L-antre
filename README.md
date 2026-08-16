@@ -14,7 +14,9 @@ L'Antre est un **agrégateur de recherches**, pas un scraper.
 |---|---|---|
 | Lieux | **Direct** | Clubs libertins, saunas et boutiques réellement présents autour de toi, via l'API Overpass (OpenStreetMap) : nom, adresse, horaires, téléphone, distance. |
 | Reddit | **Direct** | Les annonces r4r publiques, via l'API JSON publique. |
-| FetLife | Lien | Compte **gratuit** requis — inscription, recherche, groupes et messagerie ne coûtent rien. Les CGU interdisent l'extraction automatique, d'où le lien plutôt qu'une récupération directe. |
+| FetLife — profils | Lien | Recherche de kinksters sur ta ville et tes critères. |
+| FetLife — groupes | Lien | Groupes régionaux : c'est là qu'on annonce les rencontres. |
+| FetLife — événements | Lien | Soirées et munchs à venir, listés selon la ville de ton profil FetLife. |
 | Forums libertins | Lien | Requête ciblée sur les forums francophones. |
 | Craigslist | Lien | Section « activity partners » du site local à ta ville. |
 | Recherche web | Lien | Requête généraliste construite depuis tes filtres. |
@@ -84,6 +86,22 @@ Trois modes décident du minimum exigé :
 Restent des exclusions strictes, indépendantes du mode : annonces
 professionnelles ou payantes, tranche d'âge, comptes vérifiés, annonces sans
 photo, annonces de plus d'un mois.
+
+### FetLife
+
+Le compte FetLife est **gratuit**, messagerie comprise : seul un badge « supporter »
+est payant, et il n'ouvre aucune fonction de contact.
+
+L'app ne peut pas afficher de profils FetLife dans ses résultats et n'essaiera
+pas : le site n'a aucune API publique, tout est derrière l'authentification, et
+ses CGU interdisent l'accès automatisé. Elle ouvre donc trois entrées
+pré-remplies — profils, groupes, événements — que ton compte rend directement
+exploitables.
+
+Les **groupes régionaux** sont le meilleur point d'entrée : les rencontres s'y
+annoncent, et y écrire vaut mieux qu'un message froid à un profil inconnu. Pense
+à renseigner ta ville dans ton profil FetLife : la page « événements » s'en sert
+pour déterminer ce qu'elle t'affiche.
 
 ### Quand un réseau bloque une source
 

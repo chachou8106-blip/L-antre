@@ -3,7 +3,7 @@
 // Chemins relatifs obligatoires : sur GitHub Pages le site est servi depuis
 // /<repo>/ et non depuis la racine du domaine.
 
-const CACHE_NAME = 'l-antre-v6';
+const CACHE_NAME = 'l-antre-v7';
 
 const APP_SHELL = [
   './',

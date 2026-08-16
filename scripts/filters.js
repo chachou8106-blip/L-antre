@@ -34,7 +34,8 @@ const filters = {
   excludePaid: true,
 
   // Sources activées (voir sources.js)
-  sources: ['reddit', 'fetlife', 'maps', 'forums', 'craigslist', 'web'],
+  sources: ['reddit', 'fetlife', 'fetlife-groups', 'fetlife-events', 'maps',
+    'forums', 'craigslist', 'web', 'facebook', 'instagram', 'x'],
 
   // Exigence du moteur : 'large' (tout garder et classer), 'cible' (au moins un
   // critère doit correspondre), 'strict' (un critère de chaque famille cochée).
