@@ -41,6 +41,9 @@ const filters = {
   // critère doit correspondre), 'strict' (un critère de chaque famille cochée).
   searchMode: 'large',
 
+  // Requête saisie à la main ; vide = requête calculée depuis les filtres.
+  query: '',
+
   // Analyse d'image (voir vision.js)
   vision: {
     enabled: false,
@@ -139,6 +142,9 @@ function updateFilters() {
   const searchModeSelect = document.getElementById('search-mode');
   if (searchModeSelect) filters.searchMode = searchModeSelect.value;
 
+  const queryInput = document.getElementById('query-input');
+  if (queryInput) filters.query = queryInput.value.trim();
+
   filters.vision.enabled = readCheckbox('vision-enabled', filters.vision.enabled);
   filters.vision.hideNonPhoto = readCheckbox('vision-hide-nonphoto', filters.vision.hideNonPhoto);
 }
@@ -166,27 +172,45 @@ function locationTerm() {
 }
 
 /**
- * Construit la requête de recherche Reddit.
- * Syntaxe Reddit : les groupes OR entre parenthèses, exclusions avec NOT.
- * @returns {string} - Requête brute (non encodée).
+ * Requête de base envoyée aux moteurs.
+ *
+ * Règle apprise à la dure : ces moteurs exigent **tous** les mots à la fois.
+ * « Lyon Dominatrice Soumis Amatrice » ne renvoie rien, parce qu'aucun profil ne
+ * contient les quatre. Deux termes suffisent — la ville, qui filtre vraiment,
+ * plus un mot de thème. Le tri par pertinence fait le reste sur ce qui remonte.
+ *
+ * @param {number} [maxTerms] - Mots-clés ajoutés à la ville.
+ * @returns {string}
  */
-function buildRedditQuery() {
-  const parts = [];
-  const terms = keywordTerms(8).map(term => (term.includes(' ') ? `"${term}"` : term));
-
-  if (terms.length) parts.push(`(${terms.join(' OR ')})`);
+function baseQuery(maxTerms = 1) {
+  // Une requête saisie à la main l'emporte toujours.
+  if (filters.query) return filters.query;
 
   const city = locationTerm();
-  if (city) parts.push(city.includes(' ') ? `"${city}"` : city);
+  return [city, ...keywordTerms(maxTerms)].filter(Boolean).join(' ');
+}
 
-  let query = parts.join(' AND ');
+/**
+ * Thème dominant, utilisé quand un seul mot doit résumer la recherche.
+ * @returns {string}
+ */
+function themeTerm() {
+  const bdsmRoles = ['Dominatrice', 'Dominant', 'Soumise', 'Soumis', 'Maîtresse', 'Esclave'];
+  return filters.role.some(role => bdsmRoles.includes(role)) ? 'bdsm' : 'libertin';
+}
 
-  if (filters.excludePros) {
-    query += ' NOT (escort OR tarif OR payant OR professionnelle)';
-  }
+/**
+ * Construit la requête Reddit.
+ * Volontairement courte, et non restreinte à une liste de subreddits : une
+ * annonce française a plus de chances d'exister ailleurs que dans les subs
+ * anglophones auxquels la recherche était limitée.
+ * @returns {string}
+ */
+function buildRedditQuery() {
+  if (filters.query) return filters.query;
 
-  // Reddit tronque au-delà de ~512 caractères.
-  return query.slice(0, 500);
+  const city = locationTerm();
+  return [city, themeTerm()].filter(Boolean).join(' ');
 }
 
 /**
@@ -194,9 +218,9 @@ function buildRedditQuery() {
  * @returns {string}
  */
 function buildPlacesQuery() {
-  const city = locationTerm();
-  const base = ['club libertin', 'sauna libertin', 'soirée bdsm'];
-  return [...base, city].filter(Boolean).join(' ');
+  // Google Maps cherche un type de lieu, pas une liste de mots-clés — et la
+  // requête libre décrit des personnes, pas des établissements.
+  return ['club libertin', locationTerm()].filter(Boolean).join(' ');
 }
 
 /**
@@ -204,10 +228,10 @@ function buildPlacesQuery() {
  * @returns {string}
  */
 function buildWebQuery() {
-  const terms = keywordTerms(5);
-  const city = locationTerm();
-  const base = [...terms, city, 'rencontre', 'gratuit'].filter(Boolean).join(' ');
-  return filters.excludePaid ? `${base} ${blocklistOperators()}`.trim() : base;
+  const base = [baseQuery(1), 'rencontre'].filter(Boolean).join(' ');
+  // Trois exclusions au maximum : au-delà, la requête devient si étroite
+  // qu'elle ne renvoie plus rien.
+  return filters.excludePaid ? `${base} ${blocklistOperators(3)}`.trim() : base;
 }
 
 /**
@@ -266,6 +290,8 @@ window.filters = filters;
 window.updateFilters = updateFilters;
 window.keywordTerms = keywordTerms;
 window.buildRedditQuery = buildRedditQuery;
+window.baseQuery = baseQuery;
+window.themeTerm = themeTerm;
 window.buildPlacesQuery = buildPlacesQuery;
 window.buildWebQuery = buildWebQuery;
 window.radiusToZoom = radiusToZoom;

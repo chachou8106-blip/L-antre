@@ -216,6 +216,11 @@ function diagnosticsToText(diagnostics) {
     lines.push('Aucune source interrogeable en direct n\'était activée.');
   }
 
+  if (diagnostics.urls && diagnostics.urls.length) {
+    lines.push('', `Requête : ${diagnostics.query}`, '', 'Recherches ouvertes :');
+    diagnostics.urls.forEach(url => lines.push(`  ${url}`));
+  }
+
   return lines.join('\n');
 }
 

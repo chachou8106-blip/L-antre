@@ -4,7 +4,7 @@
  * Version affichée en pied de page et dans le diagnostic. Sans elle, impossible
  * de savoir si l'appareil tourne bien sur la dernière mise à jour.
  */
-const APP_VERSION = 'v8';
+const APP_VERSION = 'v9';
 
 /**
  * Enregistre le service worker (mode hors-ligne + installation PWA).

@@ -149,12 +149,14 @@ const SOURCES = [
     note: 'Annonces r4r publiques — résultats récupérés en direct.',
     searchUrl() {
       const query = encodeURIComponent(buildRedditQuery() || locationCityOrEmpty());
-      return `https://www.reddit.com/r/${REDDIT_SUBS}/search/?q=${query}&restrict_sr=1&sort=new`;
+      return `https://www.reddit.com/search/?q=${query}&sort=new&t=year`;
     },
     async fetchLive() {
       const query = buildRedditQuery() || locationCityOrEmpty();
-      const url = `https://www.reddit.com/r/${REDDIT_SUBS}/search.json`
-        + `?q=${encodeURIComponent(query)}&restrict_sr=on&sort=new&t=year&limit=25&raw_json=1`;
+      // Recherche sur tout Reddit : restreindre à une poignée de subs
+      // anglophones écartait d'office les annonces francophones.
+      const url = 'https://www.reddit.com/search.json'
+        + `?q=${encodeURIComponent(query)}&sort=new&t=year&limit=50&raw_json=1`;
 
       const { data: payload, via } = await fetchJsonResilient(url, {
         timeout: 6000,
@@ -200,11 +202,10 @@ const SOURCES = [
     id: 'fetlife',
     name: 'FetLife — profils',
     icon: 'fas fa-mask',
-    note: 'Recherche de kinksters sur ta ville et tes critères. Connecté, la page '
-      + 's’ouvre directement sur les résultats.',
+    note: 'Kinksters de ta ville. La recherche porte sur le nom de lieu seul : '
+      + 'y ajouter des critères exigerait qu’un profil contienne tous les mots.',
     searchUrl() {
-      const terms = [locationCityOrEmpty(), ...keywordTerms(3)].filter(Boolean).join(' ');
-      return `https://fetlife.com/search?q=${encodeURIComponent(terms || 'bdsm')}`;
+      return `https://fetlife.com/search?q=${encodeURIComponent(baseQuery(0) || 'bdsm')}`;
     }
   },
   {
@@ -214,8 +215,7 @@ const SOURCES = [
     note: 'Les groupes régionaux sont le meilleur point d’entrée : on y annonce '
       + 'les rencontres et on y écrit sans être un inconnu.',
     searchUrl() {
-      const terms = [locationCityOrEmpty(), socialTheme()].filter(Boolean).join(' ');
-      return `https://fetlife.com/groups/search?q=${encodeURIComponent(terms || 'bdsm')}`;
+      return `https://fetlife.com/groups/search?q=${encodeURIComponent(baseQuery(0) || 'bdsm')}`;
     }
   },
   {
@@ -273,9 +273,8 @@ const SOURCES = [
     icon: 'fas fa-comments',
     note: 'Recherche ciblée sur les forums et petites annonces francophones.',
     searchUrl() {
-      const terms = [...keywordTerms(4), locationCityOrEmpty(), 'forum libertin']
-        .filter(Boolean).join(' ');
-      const query = filters.excludePaid ? `${terms} ${blocklistOperators()}`.trim() : terms;
+      const terms = [baseQuery(0), 'forum libertin'].filter(Boolean).join(' ');
+      const query = filters.excludePaid ? `${terms} ${blocklistOperators(3)}`.trim() : terms;
       return `https://duckduckgo.com/?q=${encodeURIComponent(query)}`;
     }
   },
@@ -285,8 +284,7 @@ const SOURCES = [
     icon: 'fas fa-newspaper',
     note: 'Section « activity partners » du site local.',
     searchUrl() {
-      const terms = [...keywordTerms(3), locationCityOrEmpty()].filter(Boolean).join(' ');
-      return `https://${craigslistSite()}.craigslist.org/search/act?query=${encodeURIComponent(terms)}`;
+      return `https://${craigslistSite()}.craigslist.org/search/act?query=${encodeURIComponent(baseQuery(0))}`;
     }
   },
   {
@@ -305,7 +303,7 @@ const SOURCES = [
     note: 'Groupes libertins et BDSM de ta région — c\'est là que s\'organisent '
       + 'les soirées. Gratuit, et tu écris depuis ton compte.',
     searchUrl() {
-      const terms = [socialTheme(), locationCityOrEmpty()].filter(Boolean).join(' ');
+      const terms = filters.query || [themeTerm(), locationCityOrEmpty()].filter(Boolean).join(' ');
       return `https://www.facebook.com/search/groups/?q=${encodeURIComponent(terms)}`;
     }
   },
@@ -315,7 +313,7 @@ const SOURCES = [
     icon: 'fab fa-instagram',
     note: 'Hashtag local : les comptes amateurs de ta ville s\'y regroupent.',
     searchUrl() {
-      const tag = normalizeText(`${socialTheme()}${locationCityOrEmpty()}`).replace(/[^a-z0-9]/g, '');
+      const tag = normalizeText(`${themeTerm()}${locationCityOrEmpty()}`).replace(/[^a-z0-9]/g, '');
       return tag
         ? `https://www.instagram.com/explore/tags/${encodeURIComponent(tag)}/`
         : 'https://www.instagram.com/explore/';
@@ -327,7 +325,7 @@ const SOURCES = [
     icon: 'fab fa-x-twitter',
     note: 'Annonces récentes : l\'onglet « Récent » montre ce qui vient d\'être publié.',
     searchUrl() {
-      const terms = [...keywordTerms(3), locationCityOrEmpty()].filter(Boolean).join(' ');
+      const terms = filters.query || [locationCityOrEmpty(), themeTerm()].filter(Boolean).join(' ');
       return `https://x.com/search?q=${encodeURIComponent(terms)}&f=live`;
     }
   },
@@ -343,14 +341,6 @@ const SOURCES = [
   }
 ];
 
-/**
- * Thème social le plus pertinent pour un hashtag ou un nom de groupe.
- * @returns {string}
- */
-function socialTheme() {
-  const bdsmRoles = ['Dominatrice', 'Dominant', 'Soumise', 'Soumis', 'Maîtresse', 'Esclave'];
-  return filters.role.some(role => bdsmRoles.includes(role)) ? 'bdsm' : 'libertin';
-}
 
 /**
  * Ville courante, ou chaîne vide.
@@ -476,7 +466,11 @@ async function searchAll() {
       ? `${filters.location.lat.toFixed(3)}, ${filters.location.lng.toFixed(3)}` : null,
     radius: filters.radius,
     mode: filters.searchMode,
-    sources: []
+    query: filters.query || '(calculée)',
+    sources: [],
+    // Les URL réellement ouvertes : c'est là qu'on voit si une requête est
+    // trop étroite pour renvoyer quoi que ce soit.
+    urls: activeSources.map(source => `${source.name} → ${decodeURIComponent(source.searchUrl())}`)
   };
 
   if (liveSources.length) {
