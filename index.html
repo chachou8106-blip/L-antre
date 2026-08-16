@@ -149,8 +149,16 @@
                     <label><input type="checkbox" name="attribute" value="Tatouages"> Tatouages</label>
                     <label><input type="checkbox" name="attribute" value="Piercings"> Piercings</label>
                 </div>
+                <div class="checkbox-list">
+                    <label>
+                        <input type="checkbox" id="strict-attributes">
+                        Filtrage strict : ne garder que les annonces citant un de ces attributs
+                    </label>
+                </div>
                 <p class="field-hint">
-                    Ces termes sont cherchés dans le texte des annonces, tel que leurs auteurs l'ont écrit.
+                    Par défaut ces termes remontent les annonces correspondantes dans le tri
+                    « pertinence » sans écarter les autres — peu d'annonces les écrivent
+                    littéralement, et le filtrage strict vide vite la liste.
                 </p>
             </div>
 

@@ -43,7 +43,8 @@ function saveToHistory(usedFilters, resultCount) {
       excludePros: usedFilters.excludePros,
       excludeVerified: usedFilters.excludeVerified,
       excludeNoPic: usedFilters.excludeNoPic,
-      excludeOld: usedFilters.excludeOld
+      excludeOld: usedFilters.excludeOld,
+      strictAttributes: usedFilters.strictAttributes
     }
   });
 
@@ -178,7 +179,8 @@ function loadFilters(savedFilters) {
   if (ageMax && savedFilters.ageMax !== undefined) ageMax.value = String(savedFilters.ageMax);
 
   [['exclude-pros', 'excludePros'], ['exclude-verified', 'excludeVerified'],
-    ['exclude-no-pic', 'excludeNoPic'], ['exclude-old', 'excludeOld']].forEach(([id, key]) => {
+    ['exclude-no-pic', 'excludeNoPic'], ['exclude-old', 'excludeOld'],
+    ['strict-attributes', 'strictAttributes']].forEach(([id, key]) => {
     const element = document.getElementById(id);
     if (element && savedFilters[key] !== undefined) element.checked = savedFilters[key];
   });

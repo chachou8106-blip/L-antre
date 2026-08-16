@@ -808,3 +808,33 @@ body.modal-open {
 #modal-body .btn:hover {
   text-decoration: none;
 }
+
+/* ===== Bandeau d'état dans la grille de résultats ===== */
+.results-grid .no-results,
+.results-notice {
+  grid-column: 1 / -1;
+  margin: 0 0 0.5rem;
+  padding: 0.9rem 1rem;
+  background-color: var(--background-color);
+  border-radius: var(--border-radius);
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  text-align: left;
+}
+
+.results-notice.pending {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  border-left: 4px solid var(--primary-color);
+}
+
+.spinner-inline {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 45, 117, 0.25);
+  border-top-color: var(--primary-color);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}

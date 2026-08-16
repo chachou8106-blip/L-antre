@@ -152,6 +152,30 @@ async function mapWithLimit(items, limit, worker) {
 }
 
 /**
+ * `fetch` avec délai maximum. Sans cela, un réseau qui filtre un domaine sans
+ * répondre laisse la requête pendante indéfiniment et bloque la recherche.
+ * @param {string} url
+ * @param {Object} [options] - Options passées à fetch.
+ * @param {number} [timeout] - Délai en ms avant abandon.
+ * @returns {Promise<Response>}
+ */
+async function fetchWithTimeout(url, options = {}, timeout = 8000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeout);
+
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } catch (error) {
+    if (error.name === 'AbortError') {
+      throw new Error(`Pas de réponse en ${Math.round(timeout / 1000)} s`);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/**
  * Charge un script externe une seule fois.
  * @param {string} src
  * @returns {Promise<void>}
@@ -183,4 +207,5 @@ window.extractAge = extractAge;
 window.hashId = hashId;
 window.formatDate = formatDate;
 window.mapWithLimit = mapWithLimit;
+window.fetchWithTimeout = fetchWithTimeout;
 window.loadScriptOnce = loadScriptOnce;

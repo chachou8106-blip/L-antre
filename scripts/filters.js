@@ -35,6 +35,9 @@ const filters = {
   // Sources activées (voir sources.js)
   sources: ['reddit', 'fetlife', 'maps', 'forums', 'craigslist', 'web'],
 
+  // Les attributs excluent-ils une annonce, ou servent-ils juste au tri ?
+  strictAttributes: false,
+
   // Analyse d'image (voir vision.js)
   vision: {
     enabled: false,
@@ -125,6 +128,7 @@ function updateFilters() {
   filters.excludeVerified = readCheckbox('exclude-verified', filters.excludeVerified);
   filters.excludeNoPic = readCheckbox('exclude-no-pic', filters.excludeNoPic);
   filters.excludeOld = readCheckbox('exclude-old', filters.excludeOld);
+  filters.strictAttributes = readCheckbox('strict-attributes', filters.strictAttributes);
 
   filters.vision.enabled = readCheckbox('vision-enabled', filters.vision.enabled);
   filters.vision.hideNonPhoto = readCheckbox('vision-hide-nonphoto', filters.vision.hideNonPhoto);
@@ -231,7 +235,9 @@ function matchesFilters(result) {
     if (!filters.practices.some(practice => containsTerm(bio, practice))) return false;
   }
 
-  if (filters.attributes.length && bio.trim()) {
+  // Les attributs sont rarement écrits tels quels dans une annonce : par défaut
+  // ils nourrissent le tri par pertinence au lieu d'exclure des résultats.
+  if (filters.strictAttributes && filters.attributes.length && bio.trim()) {
     if (!filters.attributes.some(attribute => containsTerm(bio, attribute))) return false;
   }
 

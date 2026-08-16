@@ -25,8 +25,11 @@ sont hors service, et les sites concernés interdisent l'extraction automatique.
 Plutôt que d'afficher des profils inventés, L'Antre construit des liens de
 recherche réels, immédiatement ouvrables.
 
-Si Reddit refuse la requête depuis ton réseau, l'app te le dit et te laisse la
-carte « lien de recherche » correspondante.
+Les liens de recherche s'affichent immédiatement, sans attendre aucune requête
+réseau : une source en direct lente, filtrée ou bloquée ne peut pas retarder ni
+faire disparaître le reste. La récupération Reddit dispose de 8 secondes, après
+quoi elle est abandonnée et sa carte signale « récupération directe
+indisponible ».
 
 ---
 
@@ -130,6 +133,10 @@ python3 tools/generate-icons.py
   `F4M`, « dominatrice »…) : c'est une heuristique, pas une donnée déclarée.
 - **Le rayon** sert à cadrer la recherche cartographique ; les annonces Reddit
   n'exposent pas de coordonnées, donc aucune distance n'est calculée.
+- **Les attributs** (gros seins, tatouages…) ne filtrent pas par défaut : ils
+  remontent les annonces correspondantes dans le tri « pertinence ». Peu
+  d'annonces écrivent ces termes littéralement, et les exiger vide la liste.
+  La case « Filtrage strict » rétablit l'exclusion.
 - **Géolocalisation** : nécessite HTTPS et ton autorisation explicite.
 
 ---

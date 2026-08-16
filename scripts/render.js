@@ -114,8 +114,10 @@ function createResultCard(result, options = {}) {
 /**
  * Affiche la liste de résultats.
  * @param {Object[]} results
+ * @param {{pendingMessage?: string}} [options] - Message affiché tant qu'une
+ *   source en direct est encore interrogée.
  */
-function renderResults(results) {
+function renderResults(results, options = {}) {
   const container = document.getElementById('results');
   const counter = document.getElementById('result-count');
   if (!container) return;
@@ -130,10 +132,16 @@ function renderResults(results) {
     return;
   }
 
-  if (!posts.length) {
+  if (options.pendingMessage) {
+    const pending = document.createElement('p');
+    pending.className = 'results-notice pending';
+    pending.innerHTML = `<span class="spinner-inline"></span> ${escapeHtml(options.pendingMessage)}`;
+    container.appendChild(pending);
+  } else if (!posts.length) {
     const notice = document.createElement('p');
-    notice.className = 'no-results';
-    notice.textContent = 'Aucune annonce récupérable directement : ouvre les recherches ci-dessous.';
+    notice.className = 'results-notice';
+    notice.textContent = 'Aucune annonce récupérée directement : ouvre les recherches ci-dessous, '
+      + 'elles sont déjà remplies avec tes critères.';
     container.appendChild(notice);
   }
 

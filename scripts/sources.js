@@ -93,7 +93,7 @@ const SOURCES = [
       const url = `https://www.reddit.com/r/${REDDIT_SUBS}/search.json`
         + `?q=${encodeURIComponent(query)}&restrict_sr=on&sort=new&t=year&limit=25&raw_json=1`;
 
-      const response = await fetch(url, { headers: { Accept: 'application/json' } });
+      const response = await fetchWithTimeout(url, { headers: { Accept: 'application/json' } }, 8000);
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
       const payload = await response.json();
@@ -279,43 +279,63 @@ async function searchAll() {
     return [];
   }
 
-  renderLoading(`Recherche sur ${activeSources.length} source(s)…`);
-
   const liveSources = activeSources.filter(source => typeof source.fetchLive === 'function');
-  const settled = await Promise.allSettled(liveSources.map(source => source.fetchLive()));
 
-  const results = [];
+  // Les liens de recherche ne dépendent d'aucun réseau : ils s'affichent tout de
+  // suite. Une source en direct lente ou bloquée ne doit jamais retarder — ni
+  // faire disparaître — le reste des résultats.
+  const linkCards = activeSources.map(source => buildLinkCard(source));
+  renderResults(sortResults(dedupeResults([...linkCards])), {
+    pendingMessage: liveSources.length
+      ? `Interrogation de ${liveSources.map(source => source.name).join(', ')}…`
+      : ''
+  });
+
+  const posts = [];
   const failed = [];
 
-  settled.forEach((outcome, index) => {
-    const source = liveSources[index];
-    if (outcome.status === 'fulfilled') {
-      const kept = outcome.value.filter(matchesFilters);
-      results.push(...kept);
-      showNotification(`${source.name} : ${kept.length} annonce(s) sur ${outcome.value.length}.`,
-        kept.length ? 'success' : 'info');
-    } else {
-      failed.push(source.id);
-      console.warn(`Source ${source.id} indisponible :`, outcome.reason);
-      showNotification(`${source.name} inaccessible depuis le navigateur — lien de recherche fourni.`, 'warning');
+  if (liveSources.length) {
+    try {
+      const settled = await Promise.allSettled(liveSources.map(source => source.fetchLive()));
+
+      settled.forEach((outcome, index) => {
+        const source = liveSources[index];
+        if (outcome.status === 'fulfilled') {
+          const kept = (outcome.value || []).filter(matchesFilters);
+          posts.push(...kept);
+          showNotification(`${source.name} : ${kept.length} annonce(s) sur ${outcome.value.length}.`,
+            kept.length ? 'success' : 'info');
+        } else {
+          failed.push(source.id);
+          console.warn(`Source ${source.id} indisponible :`, outcome.reason);
+          showNotification(`${source.name} injoignable — le lien de recherche reste utilisable.`, 'warning');
+        }
+      });
+    } catch (error) {
+      // Filet de sécurité : même un imprévu ici ne doit pas vider la liste.
+      console.error('Phase de récupération interrompue :', error);
+      showNotification('Récupération directe interrompue — les liens restent disponibles.', 'warning');
     }
-  });
+  }
 
-  activeSources.forEach(source => {
-    const note = failed.includes(source.id) ? '(récupération directe indisponible)' : '';
-    results.push(buildLinkCard(source, note));
-  });
+  let finalResults = dedupeResults([
+    ...posts,
+    ...activeSources.map(source =>
+      buildLinkCard(source, failed.includes(source.id) ? '(récupération directe indisponible)' : ''))
+  ]);
 
-  let finalResults = dedupeResults(results);
-
-  if (filters.vision.enabled) {
-    finalResults = await analyzeResultImages(finalResults);
+  if (filters.vision.enabled && posts.length) {
+    try {
+      finalResults = await analyzeResultImages(finalResults);
+    } catch (error) {
+      console.warn('Analyse d\'image ignorée :', error);
+    }
   }
 
   finalResults = sortResults(finalResults);
 
   renderResults(finalResults);
-  saveToHistory(filters, finalResults.filter(result => result.type !== 'link').length);
+  saveToHistory(filters, posts.length);
 
   return finalResults;
 }

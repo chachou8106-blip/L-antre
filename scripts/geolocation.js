@@ -13,7 +13,7 @@ async function reverseGeocode(lat, lng) {
     + `?format=jsonv2&zoom=10&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lng)}`;
 
   try {
-    const response = await fetch(url, { headers: { Accept: 'application/json' } });
+    const response = await fetchWithTimeout(url, { headers: { Accept: 'application/json' } }, 6000);
     if (!response.ok) return null;
 
     const data = await response.json();
