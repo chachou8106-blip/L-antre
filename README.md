@@ -18,6 +18,10 @@ L'Antre est un **agrégateur de recherches**, pas un scraper.
 | Forums libertins | Lien | Requête ciblée sur les forums francophones. |
 | Craigslist | Lien | Section « activity partners » du site local à ta ville. |
 | Recherche web | Lien | Requête généraliste construite depuis tes filtres. |
+| Groupes Facebook | Lien | Recherche de groupes libertins/BDSM de ta région, là où s'organisent les soirées. |
+| Instagram | Lien | Hashtag local calculé depuis tes critères et ta ville. |
+| X (Twitter) | Lien | Onglet « Récent », pour les annonces qui viennent d'être publiées. |
+| Happn | Lien | Ouvre l'app. Happn fonctionne par croisement de trajets : aucune recherche par mots-clés n'est possible. |
 
 Pourquoi ce choix : une page web ne peut pas interroger un site tiers sans son
 accord (politique CORS du navigateur). Les proxys publics qui contournaient ça
@@ -81,6 +85,33 @@ Restent des exclusions strictes, indépendantes du mode : annonces
 professionnelles ou payantes, tranche d'âge, comptes vérifiés, annonces sans
 photo, annonces de plus d'un mois.
 
+### Gratuit uniquement
+
+L'option « Gratuit uniquement » (active par défaut) écarte les sites à
+abonnement, messagerie payante, cam et annuaires professionnels. Elle agit à
+trois endroits :
+
+- les résultats dont le lien pointe vers un domaine banni sont retirés ;
+- les annonces qui **renvoient** vers un tel domaine le sont aussi, même si leur
+  texte est irréprochable ;
+- les requêtes envoyées aux moteurs embarquent des exclusions `-site:`, pour que
+  ces sites ne remontent pas du tout.
+
+La liste est modifiable dans « Exclusions → Sites bannis » : un domaine par
+ligne, enregistré sur l'appareil. Tombé sur un site payant ? Ajoute-le, il
+disparaît des recherches suivantes. Les grands sites libertins français à
+messagerie payante y figurent d'origine — retire les lignes qui te conviennent.
+
+### Prendre contact
+
+L'app ne peut pas — et ne cherche pas à — envoyer des messages à ta place. Elle
+ouvre les recherches dans les plateformes où tu as déjà un compte, requête
+pré-remplie, et tu écris toi-même depuis ton profil.
+
+Une précision sur Happn : il n'expose aucune API publique et sa mécanique repose
+sur les trajets croisés, pas sur une recherche. Aucune application tierce ne
+peut y lancer une recherche par critères — la carte se contente d'ouvrir l'app.
+
 ### À propos de l'analyse d'image
 
 L'option « Analyse d'image » charge TensorFlow.js et MobileNet v1 (~1,3 Mo de
@@ -104,6 +135,7 @@ service-worker.js       cache hors-ligne
 styles/main.css         thème sombre, responsive
 scripts/utils.js        échappement HTML, texte, dates
 scripts/notifications.js  bandeaux temporaires
+scripts/blocklist.js    domaines bannis (gratuit uniquement)
 scripts/filters.js      état des filtres et construction des requêtes
 scripts/search-engine.js  pondération, score et modes de recherche
 scripts/geolocation.js  GPS et géocodage inverse

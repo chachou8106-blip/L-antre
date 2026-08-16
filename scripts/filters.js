@@ -31,6 +31,7 @@ const filters = {
   excludeVerified: false,
   excludeNoPic: false,
   excludeOld: true,
+  excludePaid: true,
 
   // Sources activées (voir sources.js)
   sources: ['reddit', 'fetlife', 'maps', 'forums', 'craigslist', 'web'],
@@ -48,7 +49,11 @@ const filters = {
 
 /** Termes qui trahissent une annonce professionnelle / payante. */
 const PRO_TERMS = ['pro', 'pros', 'tarif', 'tarifs', 'payant', 'payante', 'professionnel',
-  'professionnelle', 'escort', 'escorte', 'salon', 'massage tantrique', '€', '$'];
+  'professionnelle', 'escort', 'escorte', 'salon', 'massage tantrique', '€', '$',
+  // Contenu et messagerie payants
+  'abonnement', 'premium', 'vip', 'cam', 'webcam', 'onlyfans', 'mym', 'fansly',
+  'paypal', 'tribute', 'tributes', 'findom', 'paiement', 'prix', 'donation',
+  'cadeau obligatoire', 'no free', 'paid'];
 
 /**
  * Lit la valeur d'une case à cocher sans écraser un `false` légitime.
@@ -129,6 +134,7 @@ function updateFilters() {
   filters.excludeVerified = readCheckbox('exclude-verified', filters.excludeVerified);
   filters.excludeNoPic = readCheckbox('exclude-no-pic', filters.excludeNoPic);
   filters.excludeOld = readCheckbox('exclude-old', filters.excludeOld);
+  filters.excludePaid = readCheckbox('exclude-paid', filters.excludePaid);
   const searchModeSelect = document.getElementById('search-mode');
   if (searchModeSelect) filters.searchMode = searchModeSelect.value;
 
@@ -199,7 +205,8 @@ function buildPlacesQuery() {
 function buildWebQuery() {
   const terms = keywordTerms(5);
   const city = locationTerm();
-  return [...terms, city, 'rencontre'].filter(Boolean).join(' ');
+  const base = [...terms, city, 'rencontre', 'gratuit'].filter(Boolean).join(' ');
+  return filters.excludePaid ? `${base} ${blocklistOperators()}`.trim() : base;
 }
 
 /**
@@ -222,8 +229,9 @@ function matchesFilters(result) {
   if (!result) return false;
 
   // Lieux et liens de recherche ne sont pas des annonces : aucun critère de
-  // profil ne s'y applique.
-  if (result.type === 'link' || result.type === 'place') return true;
+  // profil ne s'y applique, seule la liste noire les concerne.
+  if (result.type === 'link') return true;
+  if (result.type === 'place') return !(filters.excludePaid && isBlockedUrl(result.link));
 
   const bio = `${result.title || ''} ${result.bio || ''}`;
 
@@ -233,6 +241,11 @@ function matchesFilters(result) {
   if (age && (age < filters.ageMin || age > filters.ageMax)) return false;
 
   if (filters.excludePros && PRO_TERMS.some(term => containsTerm(bio, term))) return false;
+
+  // Le texte peut être irréprochable et le lien pointer vers un site payant,
+  // directement ou via la cible d'une annonce-lien.
+  if (filters.excludePaid
+    && (isBlockedUrl(result.link) || isBlockedUrl(result.outboundUrl))) return false;
 
   if (filters.excludeVerified && result.verified) return false;
 

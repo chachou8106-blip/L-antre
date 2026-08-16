@@ -881,3 +881,50 @@ body.modal-open {
   font-size: 0.85rem;
   text-decoration: none;
 }
+
+/* ===== Sous-titre de la section Sources ===== */
+.sources-subtitle {
+  color: var(--text-secondary);
+  font-size: 1rem;
+  margin: 1.25rem 0 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* ===== Liste des sites bannis ===== */
+.blocklist {
+  margin-top: 1rem;
+  background-color: var(--background-color);
+  border-radius: var(--border-radius);
+  padding: 0.75rem 1rem;
+}
+
+.blocklist summary {
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.blocklist summary:hover {
+  color: var(--primary-color);
+}
+
+.blocklist textarea {
+  width: 100%;
+  margin-top: 0.5rem;
+  padding: 0.75rem;
+  background-color: var(--surface-color);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.85rem;
+  resize: vertical;
+}
+
+.blocklist-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}

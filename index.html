@@ -73,6 +73,19 @@
                 <label><input type="checkbox" name="source" value="craigslist" checked> Craigslist <em>(lien)</em></label>
                 <label><input type="checkbox" name="source" value="web" checked> Recherche web <em>(lien)</em></label>
             </div>
+
+            <h3 class="sources-subtitle"><i class="fas fa-comments"></i> Prendre contact</h3>
+            <div class="checkbox-grid">
+                <label><input type="checkbox" name="source" value="facebook" checked> Groupes Facebook</label>
+                <label><input type="checkbox" name="source" value="instagram" checked> Instagram</label>
+                <label><input type="checkbox" name="source" value="x" checked> X (Twitter)</label>
+                <label><input type="checkbox" name="source" value="happn"> Happn</label>
+            </div>
+            <p class="field-hint">
+                Ces liens s'ouvrent dans les apps où tu as déjà un compte, avec la recherche
+                pré-remplie : tu écris depuis ton profil, gratuitement. Happn fait exception —
+                il fonctionne par croisement de trajets et n'accepte aucune recherche.
+            </p>
             <button type="button" id="select-all-sources" class="btn btn-secondary btn-small">
                 <i class="fas fa-check-double"></i> Tout cocher / décocher
             </button>
@@ -224,7 +237,26 @@
                     <label><input type="checkbox" id="exclude-verified"> Exclure les comptes vérifiés</label>
                     <label><input type="checkbox" id="exclude-no-pic"> Exclure les annonces sans photo</label>
                     <label><input type="checkbox" id="exclude-old" checked> Exclure les annonces de plus d'un mois</label>
+                    <label><input type="checkbox" id="exclude-paid" checked> Gratuit uniquement : écarter les sites payants</label>
                 </div>
+
+                <details class="blocklist">
+                    <summary>Sites bannis (<span id="blocklist-count">0</span>)</summary>
+                    <p class="field-hint">
+                        Un domaine par ligne. Ces sites sont écartés des résultats et exclus
+                        des requêtes envoyées aux moteurs de recherche.
+                    </p>
+                    <label class="sr-only" for="blocklist-field">Sites bannis</label>
+                    <textarea id="blocklist-field" rows="8" spellcheck="false"></textarea>
+                    <div class="blocklist-actions">
+                        <button type="button" id="blocklist-save" class="btn btn-primary btn-small">
+                            <i class="fas fa-floppy-disk"></i> Enregistrer
+                        </button>
+                        <button type="button" id="blocklist-reset" class="btn btn-secondary btn-small">
+                            <i class="fas fa-rotate-left"></i> Liste par défaut
+                        </button>
+                    </div>
+                </details>
             </div>
 
             <button type="button" id="search-button" class="btn btn-primary btn-large" disabled>
@@ -279,6 +311,7 @@
     <!-- Scripts : l'ordre compte (utils d'abord, app en dernier) -->
     <script src="scripts/utils.js"></script>
     <script src="scripts/notifications.js"></script>
+    <script src="scripts/blocklist.js"></script>
     <script src="scripts/filters.js"></script>
     <script src="scripts/search-engine.js"></script>
     <script src="scripts/geolocation.js"></script>

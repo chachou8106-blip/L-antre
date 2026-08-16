@@ -76,6 +76,39 @@ function syncVisionOptions() {
   }
 }
 
+/**
+ * Met à jour le compteur de sites bannis affiché dans le résumé.
+ */
+function syncBlocklistCount() {
+  const counter = document.getElementById('blocklist-count');
+  if (counter) counter.textContent = String(getBlocklist().length);
+}
+
+/**
+ * Branche l'édition de la liste des sites bannis.
+ */
+function setupBlocklistControls() {
+  renderBlocklistField();
+  syncBlocklistCount();
+
+  document.getElementById('blocklist-save')?.addEventListener('click', () => {
+    const field = document.getElementById('blocklist-field');
+    if (!field) return;
+
+    saveBlocklist(field.value.split('\n'));
+    renderBlocklistField();
+    syncBlocklistCount();
+    showNotification(`${getBlocklist().length} site(s) banni(s) enregistré(s).`, 'success');
+  });
+
+  document.getElementById('blocklist-reset')?.addEventListener('click', () => {
+    saveBlocklist([...DEFAULT_BLOCKLIST]);
+    renderBlocklistField();
+    syncBlocklistCount();
+    showNotification('Liste par défaut rétablie.', 'info');
+  });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   // Tout changement de filtre met à jour l'objet `filters`.
   document.querySelectorAll('select, input[type="checkbox"], input[type="range"]')
@@ -114,6 +147,8 @@ document.addEventListener('DOMContentLoaded', () => {
     boxes.forEach(box => { box.checked = !allChecked; });
     updateFilters();
   });
+
+  setupBlocklistControls();
 
   updateFilters();
   syncVisionOptions();

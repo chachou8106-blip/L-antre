@@ -176,6 +176,9 @@ const SOURCES = [
             username: post.author ? `u/${post.author}` : 'Anonyme',
             bio: (post.selftext || '').slice(0, 600),
             link: `https://www.reddit.com${post.permalink}`,
+            // Une annonce peut renvoyer vers un site payant : on garde la cible
+            // pour pouvoir l'écarter.
+            outboundUrl: post.url && !post.is_self ? post.url : null,
             image: redditImage(post),
             date: post.created_utc ? new Date(post.created_utc * 1000).toISOString() : null,
             location: filters.location.city || null,
@@ -247,7 +250,8 @@ const SOURCES = [
     searchUrl() {
       const terms = [...keywordTerms(4), locationCityOrEmpty(), 'forum libertin']
         .filter(Boolean).join(' ');
-      return `https://duckduckgo.com/?q=${encodeURIComponent(terms)}`;
+      const query = filters.excludePaid ? `${terms} ${blocklistOperators()}`.trim() : terms;
+      return `https://duckduckgo.com/?q=${encodeURIComponent(query)}`;
     }
   },
   {
@@ -268,8 +272,60 @@ const SOURCES = [
     searchUrl() {
       return `https://duckduckgo.com/?q=${encodeURIComponent(buildWebQuery())}`;
     }
+  },
+  {
+    id: 'facebook',
+    name: 'Groupes Facebook',
+    icon: 'fab fa-facebook',
+    note: 'Groupes libertins et BDSM de ta région — c\'est là que s\'organisent '
+      + 'les soirées. Gratuit, et tu écris depuis ton compte.',
+    searchUrl() {
+      const terms = [socialTheme(), locationCityOrEmpty()].filter(Boolean).join(' ');
+      return `https://www.facebook.com/search/groups/?q=${encodeURIComponent(terms)}`;
+    }
+  },
+  {
+    id: 'instagram',
+    name: 'Instagram',
+    icon: 'fab fa-instagram',
+    note: 'Hashtag local : les comptes amateurs de ta ville s\'y regroupent.',
+    searchUrl() {
+      const tag = normalizeText(`${socialTheme()}${locationCityOrEmpty()}`).replace(/[^a-z0-9]/g, '');
+      return tag
+        ? `https://www.instagram.com/explore/tags/${encodeURIComponent(tag)}/`
+        : 'https://www.instagram.com/explore/';
+    }
+  },
+  {
+    id: 'x',
+    name: 'X (Twitter)',
+    icon: 'fab fa-x-twitter',
+    note: 'Annonces récentes : l\'onglet « Récent » montre ce qui vient d\'être publié.',
+    searchUrl() {
+      const terms = [...keywordTerms(3), locationCityOrEmpty()].filter(Boolean).join(' ');
+      return `https://x.com/search?q=${encodeURIComponent(terms)}&f=live`;
+    }
+  },
+  {
+    id: 'happn',
+    name: 'Happn',
+    icon: 'fas fa-heart-circle-bolt',
+    note: 'Happn fonctionne par croisement de trajets, sans recherche par mots-clés : '
+      + 'l\'app s\'ouvre sur ton compte, les critères ne peuvent pas y être transmis.',
+    searchUrl() {
+      return 'https://www.happn.com/';
+    }
   }
 ];
+
+/**
+ * Thème social le plus pertinent pour un hashtag ou un nom de groupe.
+ * @returns {string}
+ */
+function socialTheme() {
+  const bdsmRoles = ['Dominatrice', 'Dominant', 'Soumise', 'Soumis', 'Maîtresse', 'Esclave'];
+  return filters.role.some(role => bdsmRoles.includes(role)) ? 'bdsm' : 'libertin';
+}
 
 /**
  * Ville courante, ou chaîne vide.
@@ -374,7 +430,9 @@ async function searchAll() {
   // Les liens de recherche ne dépendent d'aucun réseau : ils s'affichent tout de
   // suite. Une source en direct lente ou bloquée ne doit jamais retarder — ni
   // faire disparaître — le reste des résultats.
-  const linkCards = activeSources.map(source => buildLinkCard(source));
+  const linkCards = activeSources
+    .map(source => buildLinkCard(source))
+    .filter(card => !(filters.excludePaid && isBlockedUrl(card.link)));
   renderResults(sortResults(dedupeResults([...linkCards])), {
     pendingMessage: liveSources.length
       ? `Interrogation de ${liveSources.map(source => source.name).join(', ')}…`
@@ -412,8 +470,9 @@ async function searchAll() {
 
   let finalResults = dedupeResults([
     ...posts,
-    ...activeSources.map(source =>
-      buildLinkCard(source, failed.includes(source.id) ? '(récupération directe indisponible)' : ''))
+    ...activeSources
+      .map(source => buildLinkCard(source, failed.includes(source.id) ? '(récupération directe indisponible)' : ''))
+      .filter(card => !(filters.excludePaid && isBlockedUrl(card.link)))
   ]);
 
   if (filters.vision.enabled && posts.length) {
