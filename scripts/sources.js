@@ -6,6 +6,69 @@
 // navigateur (aujourd'hui : Reddit), les résultats sont récupérés et affichés
 // directement. Sinon, seule la carte « lien de recherche » est proposée.
 
+/** Serveur Overpass interrogé pour les lieux réels (données OpenStreetMap). */
+const OVERPASS_ENDPOINT = 'https://overpass-api.de/api/interpreter';
+
+/** Libellés lisibles des catégories de lieux OpenStreetMap. */
+const PLACE_LABELS = {
+  swingerclub: 'Club libertin',
+  swinger: 'Club échangiste',
+  sauna: 'Sauna',
+  erotic: 'Boutique érotique',
+  nightclub: 'Club'
+};
+
+/**
+ * Transforme un élément Overpass en fiche de lieu exploitable.
+ * @param {Object} element - Élément renvoyé par Overpass.
+ * @param {{lat: number, lng: number}} origin - Point de référence pour la distance.
+ * @returns {Object|null}
+ */
+function buildPlace(element, origin) {
+  const tags = element.tags || {};
+  const lat = element.lat ?? (element.center && element.center.lat);
+  const lng = element.lon ?? (element.center && element.center.lon);
+  if (!tags.name && !tags['addr:street']) return null;
+
+  const category = PLACE_LABELS[tags.amenity] || PLACE_LABELS[tags.club]
+    || PLACE_LABELS[tags.leisure] || PLACE_LABELS[tags.shop] || 'Lieu';
+
+  const address = [tags['addr:housenumber'], tags['addr:street'], tags['addr:postcode'],
+    tags['addr:city']].filter(Boolean).join(' ');
+
+  const distance = (lat !== undefined && lng !== undefined && origin)
+    ? distanceKm(origin.lat, origin.lng, lat, lng)
+    : null;
+
+  const website = tags.website || tags['contact:website'] || tags.url;
+  const osmLink = `https://www.openstreetmap.org/${element.type}/${element.id}`;
+
+  return {
+    type: 'place',
+    id: hashId(`osm:${element.type}:${element.id}`),
+    source: 'maps',
+    platform: `${category} · OpenStreetMap`,
+    icon: 'fas fa-location-dot',
+    title: tags.name || category,
+    bio: [address, tags.opening_hours ? `Horaires : ${tags.opening_hours}` : '',
+      tags.description || ''].filter(Boolean).join(' — ') || 'Adresse relevée dans OpenStreetMap.',
+    link: website || osmLink,
+    image: null,
+    date: null,
+    address,
+    phone: tags.phone || tags['contact:phone'] || null,
+    openingHours: tags.opening_hours || null,
+    website: website || null,
+    lat,
+    lng,
+    distance,
+    location: distance !== null ? `${distance} km` : (filters.location.city || null),
+    gender: null,
+    role: null,
+    verified: false
+  };
+}
+
 /** Subreddits interrogés pour la recherche en direct. */
 const REDDIT_SUBS = 'DirtyR4R+BDSMr4r+r4r+bdsmpersonals+Femdom+libertinage';
 
@@ -136,9 +199,9 @@ const SOURCES = [
   },
   {
     id: 'maps',
-    name: 'Lieux (Google Maps)',
+    name: 'Lieux',
     icon: 'fas fa-map-location-dot',
-    note: 'Clubs, saunas et soirées autour du point de recherche.',
+    note: 'Clubs libertins, saunas et adresses réelles autour de toi.',
     searchUrl() {
       const query = encodeURIComponent(buildPlacesQuery());
       const { lat, lng } = filters.location;
@@ -146,6 +209,34 @@ const SOURCES = [
         return `https://www.google.com/maps/search/${query}/@${lat},${lng},${radiusToZoom()}z`;
       }
       return `https://www.google.com/maps/search/${query}`;
+    },
+    async fetchLive() {
+      const point = await ensureCoordinates();
+      if (!point) throw new Error('Coordonnées inconnues');
+
+      // Rayon plafonné : au-delà, la requête devient trop lourde pour Overpass.
+      const radius = Math.min(filters.radius, 100) * 1000;
+      const query = `[out:json][timeout:20];(`
+        + `nwr["amenity"="swingerclub"](around:${radius},${point.lat},${point.lng});`
+        + `nwr["club"="swinger"](around:${radius},${point.lat},${point.lng});`
+        + `nwr["leisure"="sauna"](around:${radius},${point.lat},${point.lng});`
+        + `nwr["shop"="erotic"](around:${radius},${point.lat},${point.lng});`
+        + `nwr["amenity"="nightclub"]["name"~"libertin|echangiste|échangiste|fetish|bdsm|swing",i](around:${radius},${point.lat},${point.lng});`
+        + `);out center 60;`;
+
+      const response = await fetchWithTimeout(OVERPASS_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `data=${encodeURIComponent(query)}`
+      }, 20000);
+
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+      const payload = await response.json();
+      return (payload.elements || [])
+        .map(element => buildPlace(element, point))
+        .filter(Boolean)
+        .sort((a, b) => (a.distance ?? 999) - (b.distance ?? 999));
     }
   },
   {
@@ -231,34 +322,33 @@ function dedupeResults(results) {
 }
 
 /**
- * Score de pertinence : nombre de mots-clés retenus présents dans le texte.
- * @param {Object} result
- * @returns {number}
- */
-function relevanceScore(result) {
-  const text = `${result.title || ''} ${result.bio || ''}`;
-  return keywordTerms(12).reduce((score, term) => score + (containsTerm(text, term) ? 1 : 0), 0);
-}
-
-/**
  * Trie les résultats selon le critère choisi.
- * Les cartes « lien » restent groupées en fin de liste.
+ * Les lieux et les annonces sont classés ensemble ; les cartes « lien de
+ * recherche » restent groupées en fin de liste.
  * @param {Object[]} results
  * @returns {Object[]}
  */
 function sortResults(results) {
-  const posts = results.filter(result => result.type !== 'link');
+  const found = results.filter(result => result.type !== 'link');
   const links = results.filter(result => result.type === 'link');
 
-  if (filters.sortBy === 'relevance') {
-    posts.sort((a, b) => relevanceScore(b) - relevanceScore(a));
+  const byDistance = (a, b) => (a.distance ?? Infinity) - (b.distance ?? Infinity);
+
+  if (filters.sortBy === 'distance') {
+    found.sort(byDistance);
   } else if (filters.sortBy === 'source') {
-    posts.sort((a, b) => String(a.platform).localeCompare(String(b.platform), 'fr'));
+    found.sort((a, b) => String(a.platform).localeCompare(String(b.platform), 'fr'));
+  } else if (filters.sortBy === 'recent') {
+    found.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
   } else {
-    posts.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+    // Pertinence : les annonces notées d'abord, puis les lieux par distance.
+    found.sort((a, b) => {
+      const scoreDiff = (b.score ?? -1) - (a.score ?? -1);
+      return scoreDiff !== 0 ? scoreDiff : byDistance(a, b);
+    });
   }
 
-  return [...posts, ...links];
+  return [...found, ...links];
 }
 
 /**
@@ -301,9 +391,11 @@ async function searchAll() {
       settled.forEach((outcome, index) => {
         const source = liveSources[index];
         if (outcome.status === 'fulfilled') {
-          const kept = (outcome.value || []).filter(matchesFilters);
+          const raw = outcome.value || [];
+          // Exclusions dures d'abord (pros, âge, ancienneté), puis notation.
+          const kept = rankResults(raw.filter(matchesFilters));
           posts.push(...kept);
-          showNotification(`${source.name} : ${kept.length} annonce(s) sur ${outcome.value.length}.`,
+          showNotification(`${source.name} : ${kept.length} résultat(s) sur ${raw.length}.`,
             kept.length ? 'success' : 'info');
         } else {
           failed.push(source.id);

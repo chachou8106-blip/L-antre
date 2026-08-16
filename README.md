@@ -12,9 +12,9 @@ L'Antre est un **agrégateur de recherches**, pas un scraper.
 
 | Source | Mode | Détail |
 |---|---|---|
-| Reddit | **Direct** | Les annonces r4r publiques sont récupérées via l'API JSON publique et affichées dans l'app. |
+| Lieux | **Direct** | Clubs libertins, saunas et boutiques réellement présents autour de toi, via l'API Overpass (OpenStreetMap) : nom, adresse, horaires, téléphone, distance. |
+| Reddit | **Direct** | Les annonces r4r publiques, via l'API JSON publique. |
 | FetLife | Lien | Compte requis, et les CGU interdisent l'extraction automatique. |
-| Lieux (Google Maps) | Lien | Clubs, saunas et soirées autour de ta position. |
 | Forums libertins | Lien | Requête ciblée sur les forums francophones. |
 | Craigslist | Lien | Section « activity partners » du site local à ta ville. |
 | Recherche web | Lien | Requête généraliste construite depuis tes filtres. |
@@ -59,6 +59,28 @@ exigent `http://localhost` ou du HTTPS.
 - **Favoris et historique** : stockés en `localStorage`, rechargeables en un clic.
 - **Hors-ligne** : service worker avec app shell en cache.
 
+### Le moteur de recherche
+
+Les critères ne suppriment plus de résultats : ils les **notent**. Chaque annonce
+reçoit un score pondéré — ville et rôle pèsent le plus, les attributs physiques
+le moins — augmenté d'un bonus de fraîcheur et d'un bonus d'intention (une
+annonce qui écrit « cherche », « dispo ce soir », « MP » vaut mieux qu'une
+discussion de fond). Le pourcentage affiché sur chaque carte est ce score
+rapporté au maximum atteignable, et les critères trouvés sont listés en
+étiquettes.
+
+Trois modes décident du minimum exigé :
+
+| Mode | Effet |
+|---|---|
+| **Large** (défaut) | Rien n'est écarté, tout est classé. À utiliser pour une première recherche. |
+| **Ciblé** | Il faut au moins un critère correspondant. |
+| **Strict** | Il faut un critère de chaque famille cochée. Très restrictif : une annonce réelle cite rarement les quatre. |
+
+Restent des exclusions strictes, indépendantes du mode : annonces
+professionnelles ou payantes, tranche d'âge, comptes vérifiés, annonces sans
+photo, annonces de plus d'un mois.
+
 ### À propos de l'analyse d'image
 
 L'option « Analyse d'image » charge TensorFlow.js et MobileNet v1 (~1,3 Mo de
@@ -83,6 +105,7 @@ styles/main.css         thème sombre, responsive
 scripts/utils.js        échappement HTML, texte, dates
 scripts/notifications.js  bandeaux temporaires
 scripts/filters.js      état des filtres et construction des requêtes
+scripts/search-engine.js  pondération, score et modes de recherche
 scripts/geolocation.js  GPS et géocodage inverse
 scripts/vision.js       TensorFlow.js / MobileNet
 scripts/favorites.js    favoris (localStorage)
@@ -133,10 +156,12 @@ python3 tools/generate-icons.py
   `F4M`, « dominatrice »…) : c'est une heuristique, pas une donnée déclarée.
 - **Le rayon** sert à cadrer la recherche cartographique ; les annonces Reddit
   n'exposent pas de coordonnées, donc aucune distance n'est calculée.
-- **Les attributs** (gros seins, tatouages…) ne filtrent pas par défaut : ils
-  remontent les annonces correspondantes dans le tri « pertinence ». Peu
-  d'annonces écrivent ces termes littéralement, et les exiger vide la liste.
-  La case « Filtrage strict » rétablit l'exclusion.
+- **Les attributs** (gros seins, tatouages…) ne filtrent pas : ils pèsent dans
+  le score. Peu d'annonces écrivent ces termes littéralement, et les exiger
+  vide la liste. Le mode « strict » rétablit l'exclusion.
+- **Les lieux** viennent d'OpenStreetMap, donc de contributions bénévoles : la
+  couverture est bonne en ville, plus clairsemée en zone rurale, et un
+  établissement fermé peut y figurer encore.
 - **Géolocalisation** : nécessite HTTPS et ton autorisation explicite.
 
 ---

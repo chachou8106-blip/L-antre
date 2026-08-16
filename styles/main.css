@@ -838,3 +838,46 @@ body.modal-open {
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
+
+/* ===== Score de correspondance et critères retenus ===== */
+.result-meta .tag-score {
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.result-meta .tag-score.high {
+  background-color: rgba(76, 175, 80, 0.25);
+}
+
+.result-meta .tag-score.mid {
+  background-color: rgba(255, 152, 0, 0.22);
+}
+
+.result-meta .tag-score.low {
+  background-color: var(--surface-color);
+  color: var(--text-secondary);
+}
+
+.result-meta .tag-match {
+  background-color: rgba(255, 45, 117, 0.14);
+  color: var(--secondary-color);
+}
+
+/* ===== Lieux réels ===== */
+.place-badge {
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.18), rgba(255, 45, 117, 0.08));
+}
+
+.place-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.place-actions .btn {
+  flex: 1;
+  margin-top: 0;
+  padding: 0.5rem;
+  font-size: 0.85rem;
+  text-decoration: none;
+}

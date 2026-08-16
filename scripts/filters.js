@@ -14,7 +14,7 @@ const filters = {
 
   // Critères de base
   radius: 50,
-  sortBy: 'recent',
+  sortBy: 'pertinence',
 
   // Filtres principaux
   gender: ['Femme'],
@@ -35,8 +35,9 @@ const filters = {
   // Sources activées (voir sources.js)
   sources: ['reddit', 'fetlife', 'maps', 'forums', 'craigslist', 'web'],
 
-  // Les attributs excluent-ils une annonce, ou servent-ils juste au tri ?
-  strictAttributes: false,
+  // Exigence du moteur : 'large' (tout garder et classer), 'cible' (au moins un
+  // critère doit correspondre), 'strict' (un critère de chaque famille cochée).
+  searchMode: 'large',
 
   // Analyse d'image (voir vision.js)
   vision: {
@@ -128,7 +129,8 @@ function updateFilters() {
   filters.excludeVerified = readCheckbox('exclude-verified', filters.excludeVerified);
   filters.excludeNoPic = readCheckbox('exclude-no-pic', filters.excludeNoPic);
   filters.excludeOld = readCheckbox('exclude-old', filters.excludeOld);
-  filters.strictAttributes = readCheckbox('strict-attributes', filters.strictAttributes);
+  const searchModeSelect = document.getElementById('search-mode');
+  if (searchModeSelect) filters.searchMode = searchModeSelect.value;
 
   filters.vision.enabled = readCheckbox('vision-enabled', filters.vision.enabled);
   filters.vision.hideNonPhoto = readCheckbox('vision-hide-nonphoto', filters.vision.hideNonPhoto);
@@ -218,29 +220,15 @@ function radiusToZoom() {
  */
 function matchesFilters(result) {
   if (!result) return false;
-  if (result.type === 'link') return true;
+
+  // Lieux et liens de recherche ne sont pas des annonces : aucun critère de
+  // profil ne s'y applique.
+  if (result.type === 'link' || result.type === 'place') return true;
 
   const bio = `${result.title || ''} ${result.bio || ''}`;
 
-  if (filters.gender.length && result.gender) {
-    if (!filters.gender.some(gender => containsTerm(result.gender, gender))) return false;
-  }
-
-  if (filters.role.length && result.role) {
-    if (!filters.role.some(role => containsTerm(result.role, role))) return false;
-  }
-
-  // Pratiques et attributs sont cherchés dans le texte de l'annonce.
-  if (filters.practices.length && bio.trim()) {
-    if (!filters.practices.some(practice => containsTerm(bio, practice))) return false;
-  }
-
-  // Les attributs sont rarement écrits tels quels dans une annonce : par défaut
-  // ils nourrissent le tri par pertinence au lieu d'exclure des résultats.
-  if (filters.strictAttributes && filters.attributes.length && bio.trim()) {
-    if (!filters.attributes.some(attribute => containsTerm(bio, attribute))) return false;
-  }
-
+  // Genre, rôle, pratiques et attributs ne suppriment plus rien ici : ils sont
+  // pondérés par le moteur (search-engine.js), qui décide selon le mode choisi.
   const age = result.age || extractAge(bio);
   if (age && (age < filters.ageMin || age > filters.ageMax)) return false;
 

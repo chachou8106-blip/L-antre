@@ -28,8 +28,16 @@ function isFavorite(link) {
 function metaHtml(result) {
   const items = [];
 
+  if (typeof result.percent === 'number') {
+    const level = result.percent >= 60 ? 'high' : result.percent >= 30 ? 'mid' : 'low';
+    items.push(`<span class="tag-score ${level}"><i class="fas fa-bullseye"></i> `
+      + `${escapeHtml(result.percent)} %</span>`);
+  }
   if (result.location) {
     items.push(`<span><i class="fas fa-map-marker-alt"></i> ${escapeHtml(result.location)}</span>`);
+  }
+  if (result.openingHours) {
+    items.push(`<span><i class="fas fa-clock"></i> ${escapeHtml(result.openingHours)}</span>`);
   }
   items.push(`<span><i class="fas fa-globe"></i> ${escapeHtml(result.platform || 'Inconnu')}</span>`);
   if (result.gender) {
@@ -48,8 +56,34 @@ function metaHtml(result) {
   (result.labels || []).slice(0, 3).forEach(label => {
     items.push(`<span class="tag-vision"><i class="fas fa-eye"></i> ${escapeHtml(label.name)}</span>`);
   });
+  (result.matched || []).slice(0, 5).forEach(term => {
+    items.push(`<span class="tag-match"><i class="fas fa-check"></i> ${escapeHtml(term)}</span>`);
+  });
 
   return `<div class="result-meta">${items.join('')}</div>`;
+}
+
+/**
+ * Actions propres à un lieu réel : itinéraire et appel.
+ * @param {Object} result
+ * @returns {string} - HTML échappé.
+ */
+function placeActionsHtml(result) {
+  if (result.type !== 'place') return '';
+  const actions = [];
+
+  if (result.lat !== undefined && result.lng !== undefined) {
+    const itinerary = `https://www.google.com/maps/dir/?api=1&destination=${result.lat},${result.lng}`;
+    actions.push(`<a href="${safeUrl(itinerary)}" target="_blank" rel="noopener noreferrer"
+      class="btn btn-secondary"><i class="fas fa-diamond-turn-right"></i> Itinéraire</a>`);
+  }
+  if (result.phone) {
+    const tel = String(result.phone).replace(/[^+0-9]/g, '');
+    actions.push(`<a href="tel:${escapeHtml(tel)}" class="btn btn-secondary">
+      <i class="fas fa-phone"></i> Appeler</a>`);
+  }
+
+  return actions.length ? `<div class="place-actions">${actions.join('')}</div>` : '';
 }
 
 /**
@@ -76,9 +110,9 @@ function createResultCard(result, options = {}) {
   });
   card.appendChild(favoriteButton);
 
-  if (result.type === 'link') {
+  if (result.type === 'link' || result.type === 'place') {
     const badge = document.createElement('div');
-    badge.className = 'link-badge';
+    badge.className = result.type === 'place' ? 'link-badge place-badge' : 'link-badge';
     badge.innerHTML = `<i class="${escapeHtml(result.icon || 'fas fa-link')}"></i>`;
     card.appendChild(badge);
   } else {
@@ -101,10 +135,13 @@ function createResultCard(result, options = {}) {
     <a href="${safeUrl(result.link)}" target="_blank" rel="noopener noreferrer nofollow"
        class="btn btn-secondary">
       <i class="fas fa-external-link-alt"></i>
-      ${result.type === 'link' ? 'Ouvrir la recherche' : "Voir l'annonce"}
+      ${result.type === 'link' ? 'Ouvrir la recherche'
+        : result.type === 'place' ? 'Voir le lieu' : "Voir l'annonce"}
     </a>
+    ${placeActionsHtml(result)}
   `;
-  info.querySelector('a').addEventListener('click', event => event.stopPropagation());
+  info.querySelectorAll('a').forEach(anchor =>
+    anchor.addEventListener('click', event => event.stopPropagation()));
   card.appendChild(info);
 
   card.addEventListener('click', () => showProfileModal(result));
@@ -163,7 +200,7 @@ function showProfileModal(result) {
   const date = formatDate(result.date);
 
   body.innerHTML = `
-    ${result.type === 'link'
+    ${result.type === 'link' || result.type === 'place'
       ? `<div class="modal-badge"><i class="${escapeHtml(result.icon || 'fas fa-link')}"></i></div>`
       : `<img src="${safeUrl(result.image) === '#' ? 'assets/default-profile.png' : safeUrl(result.image)}"
               alt="" onerror="this.src='assets/default-profile.png';">`}
@@ -173,6 +210,13 @@ function showProfileModal(result) {
       ? `<p><strong>Auteur :</strong> ${escapeHtml(result.username)}</p>` : ''}
     <p><strong>Description :</strong> ${escapeHtml(result.bio || 'Aucune description')}</p>
     ${result.location ? `<p><strong>Zone :</strong> ${escapeHtml(result.location)}</p>` : ''}
+    ${result.address ? `<p><strong>Adresse :</strong> ${escapeHtml(result.address)}</p>` : ''}
+    ${result.phone ? `<p><strong>Téléphone :</strong> ${escapeHtml(result.phone)}</p>` : ''}
+    ${result.openingHours ? `<p><strong>Horaires :</strong> ${escapeHtml(result.openingHours)}</p>` : ''}
+    ${typeof result.percent === 'number'
+      ? `<p><strong>Correspondance :</strong> ${escapeHtml(result.percent)} %`
+        + `${(result.matched || []).length ? ` (${escapeHtml(result.matched.join(', '))})` : ''}</p>`
+      : ''}
     ${result.gender ? `<p><strong>Genre :</strong> ${escapeHtml(result.gender)}</p>` : ''}
     ${result.role ? `<p><strong>Rôle :</strong> ${escapeHtml(result.role)}</p>` : ''}
     ${result.age ? `<p><strong>Âge annoncé :</strong> ${escapeHtml(result.age)} ans</p>` : ''}
@@ -183,8 +227,10 @@ function showProfileModal(result) {
     <div class="modal-actions">
       <a href="${safeUrl(result.link)}" target="_blank" rel="noopener noreferrer nofollow"
          class="btn btn-primary">
-        <i class="fas fa-external-link-alt"></i> Ouvrir sur ${escapeHtml(result.platform || 'le site')}
+        <i class="fas fa-external-link-alt"></i>
+        ${result.type === 'place' ? 'Ouvrir la fiche' : `Ouvrir sur ${escapeHtml(result.platform || 'le site')}`}
       </a>
+      ${placeActionsHtml(result)}
       <button type="button" id="modal-favorite" class="btn btn-secondary">
         <i class="fas fa-heart"></i> ${favorited ? 'Retirer des favoris' : 'Ajouter aux favoris'}
       </button>

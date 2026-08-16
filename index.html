@@ -22,10 +22,10 @@
     <div class="container">
         <p class="banner">
             <i class="fas fa-circle-info"></i>
-            L'Antre construit de vraies requêtes de recherche à partir de tes filtres et les
-            ouvre sur chaque site. Les annonces Reddit sont récupérées directement ; les autres
-            sources exigent un compte ou interdisent l'extraction automatique, elles sont donc
-            proposées sous forme de lien.
+            L'Antre interroge en direct les sources qui l'autorisent — les lieux réels
+            autour de toi (adresse, horaires, téléphone) et les annonces Reddit — puis
+            construit une requête prête à ouvrir pour celles qui exigent un compte.
+            Tes critères ne suppriment rien par défaut : ils classent.
         </p>
 
         <!-- Section Localisation -->
@@ -68,7 +68,7 @@
             <div class="checkbox-grid">
                 <label><input type="checkbox" name="source" value="reddit" checked> Reddit <em>(direct)</em></label>
                 <label><input type="checkbox" name="source" value="fetlife" checked> FetLife <em>(lien)</em></label>
-                <label><input type="checkbox" name="source" value="maps" checked> Lieux &amp; clubs <em>(lien)</em></label>
+                <label><input type="checkbox" name="source" value="maps" checked> Lieux &amp; clubs <em>(direct)</em></label>
                 <label><input type="checkbox" name="source" value="forums" checked> Forums <em>(lien)</em></label>
                 <label><input type="checkbox" name="source" value="craigslist" checked> Craigslist <em>(lien)</em></label>
                 <label><input type="checkbox" name="source" value="web" checked> Recherche web <em>(lien)</em></label>
@@ -149,16 +149,10 @@
                     <label><input type="checkbox" name="attribute" value="Tatouages"> Tatouages</label>
                     <label><input type="checkbox" name="attribute" value="Piercings"> Piercings</label>
                 </div>
-                <div class="checkbox-list">
-                    <label>
-                        <input type="checkbox" id="strict-attributes">
-                        Filtrage strict : ne garder que les annonces citant un de ces attributs
-                    </label>
-                </div>
                 <p class="field-hint">
-                    Par défaut ces termes remontent les annonces correspondantes dans le tri
-                    « pertinence » sans écarter les autres — peu d'annonces les écrivent
-                    littéralement, et le filtrage strict vide vite la liste.
+                    Ces termes pèsent dans le score de correspondance. Ils n'écartent rien
+                    par eux-mêmes : c'est le mode de recherche, plus bas, qui décide du
+                    minimum exigé.
                 </p>
             </div>
 
@@ -179,11 +173,26 @@
             </div>
 
             <div class="filter-group">
+                <h3><i class="fas fa-sliders"></i> Mode de recherche</h3>
+                <label class="sr-only" for="search-mode">Mode de recherche</label>
+                <select id="search-mode">
+                    <option value="large" selected>Large — tout remonter, classé par correspondance</option>
+                    <option value="cible">Ciblé — au moins un critère doit correspondre</option>
+                    <option value="strict">Strict — un critère de chaque famille cochée</option>
+                </select>
+                <p class="field-hint">
+                    Commence en « large » : tu vois tout ce qui existe autour de toi, les
+                    meilleures correspondances en haut. Resserre ensuite si le volume gêne.
+                </p>
+            </div>
+
+            <div class="filter-group">
                 <h3><i class="fas fa-sort"></i> Tri des résultats</h3>
                 <label class="sr-only" for="sort-select">Tri</label>
                 <select id="sort-select">
-                    <option value="recent" selected>Plus récents</option>
-                    <option value="relevance">Pertinence (mots-clés)</option>
+                    <option value="pertinence" selected>Correspondance (score)</option>
+                    <option value="distance">Plus proches</option>
+                    <option value="recent">Plus récents</option>
                     <option value="source">Par source</option>
                 </select>
             </div>
@@ -225,7 +234,7 @@
 
         <!-- Section Résultats -->
         <section class="section">
-            <h2><i class="fas fa-list"></i> Annonces trouvées (<span id="result-count">0</span>)</h2>
+            <h2><i class="fas fa-list"></i> Résultats concrets (<span id="result-count">0</span>)</h2>
             <div class="search-options">
                 <button type="button" id="refresh-button" class="btn btn-secondary">
                     <i class="fas fa-sync-alt"></i> Actualiser
@@ -271,6 +280,7 @@
     <script src="scripts/utils.js"></script>
     <script src="scripts/notifications.js"></script>
     <script src="scripts/filters.js"></script>
+    <script src="scripts/search-engine.js"></script>
     <script src="scripts/geolocation.js"></script>
     <script src="scripts/vision.js"></script>
     <script src="scripts/favorites.js"></script>
