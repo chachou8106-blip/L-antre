@@ -1,221 +1,193 @@
-// Gestion de l'historique des recherches
+// Historique des recherches (localStorage)
+
+const HISTORY_KEY = 'lAntreHistory';
+const HISTORY_LIMIT = 20;
 
 /**
- * Sauvegarde une recherche dans l'historique
- * @param {Object} filters - Les filtres utilisés pour la recherche
- * @param {number} resultCount - Le nombre de résultats trouvés
+ * Lit l'historique enregistré.
+ * @returns {Object[]}
  */
-function saveToHistory(filters, resultCount) {
-  // Récupérer l'historique existant ou créer un tableau vide
-  let history = JSON.parse(localStorage.getItem('lAntreHistory')) || [];
-  
-  // Créer un nouvel élément d'historique
-  const historyItem = {
-    id: Date.now(), // ID unique basé sur le timestamp
-    date: new Date().toLocaleString('fr-FR'),
-    filters: {
-      location: {...filters.location},
-      radius: filters.radius,
-      gender: [...filters.gender],
-      role: [...filters.role],
-      practices: [...filters.practices],
-      attributes: [...filters.attributes],
-      ageMin: filters.ageMin,
-      ageMax: filters.ageMax,
-      excludePros: filters.excludePros,
-      excludeVerified: filters.excludeVerified,
-      excludeNoPic: filters.excludeNoPic,
-      excludeOld: filters.excludeOld
-    },
-    resultCount: resultCount
-  };
-  
-  // Ajouter le nouvel élément au début de l'historique
-  history.unshift(historyItem);
-  
-  // Limiter l'historique à 20 éléments maximum
-  if (history.length > 20) {
-    history = history.slice(0, 20);
+function getHistory() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(HISTORY_KEY));
+    return Array.isArray(stored) ? stored : [];
+  } catch (error) {
+    console.warn('Historique illisible, réinitialisation :', error);
+    return [];
   }
-  
-  // Sauvegarder dans le localStorage
-  localStorage.setItem('lAntreHistory', JSON.stringify(history));
-  
-  // Mettre à jour l'affichage
+}
+
+/**
+ * Enregistre une recherche dans l'historique.
+ * @param {Object} usedFilters - L'objet `filters` au moment de la recherche.
+ * @param {number} resultCount - Nombre d'annonces récupérées.
+ */
+function saveToHistory(usedFilters, resultCount) {
+  const history = getHistory();
+
+  history.unshift({
+    id: Date.now(),
+    date: new Date().toISOString(),
+    resultCount,
+    filters: {
+      location: { ...usedFilters.location },
+      radius: usedFilters.radius,
+      sortBy: usedFilters.sortBy,
+      gender: [...usedFilters.gender],
+      role: [...usedFilters.role],
+      practices: [...usedFilters.practices],
+      attributes: [...usedFilters.attributes],
+      sources: [...usedFilters.sources],
+      ageMin: usedFilters.ageMin,
+      ageMax: usedFilters.ageMax,
+      excludePros: usedFilters.excludePros,
+      excludeVerified: usedFilters.excludeVerified,
+      excludeNoPic: usedFilters.excludeNoPic,
+      excludeOld: usedFilters.excludeOld
+    }
+  });
+
+  try {
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(history.slice(0, HISTORY_LIMIT)));
+  } catch (error) {
+    console.warn('Impossible d\'enregistrer l\'historique :', error);
+  }
+
   updateHistoryDisplay();
 }
 
 /**
- * Met à jour l'affichage de l'historique
+ * Redessine la liste de l'historique.
  */
 function updateHistoryDisplay() {
-  const history = JSON.parse(localStorage.getItem('lAntreHistory')) || [];
-  const historyDiv = document.getElementById('history');
-  
-  if (!historyDiv) return;
-  
-  historyDiv.innerHTML = '';
-  
-  if (history.length === 0) {
-    historyDiv.innerHTML = '<p class="no-results">Aucune recherche dans l\'historique.</p>';
+  const container = document.getElementById('history');
+  if (!container) return;
+
+  const history = getHistory();
+  container.innerHTML = '';
+
+  if (!history.length) {
+    container.innerHTML = '<p class="no-results">Aucune recherche dans l\'historique.</p>';
     return;
   }
-  
-  // Créer un élément pour chaque recherche dans l'historique
-  history.forEach(item => {
-    const historyItem = document.createElement('div');
-    historyItem.className = 'history-item';
-    historyItem.innerHTML = `
+
+  const fragment = document.createDocumentFragment();
+
+  history.forEach(entry => {
+    const item = document.createElement('div');
+    item.className = 'history-item';
+    item.tabIndex = 0;
+    item.setAttribute('role', 'button');
+
+    const place = entry.filters.location.city
+      || (entry.filters.location.lat !== null ? 'Position GPS' : 'Non précisée');
+
+    item.innerHTML = `
       <div class="history-header">
-        <span class="history-date"><i class="fas fa-clock"></i> ${item.date}</span>
-        <span class="history-count">${item.resultCount} résultat(s)</span>
+        <span class="history-date"><i class="fas fa-clock"></i> ${escapeHtml(formatDate(entry.date) || entry.date)}</span>
+        <span class="history-count">${escapeHtml(entry.resultCount)} annonce(s)</span>
       </div>
       <div class="history-filters">
-        <p><strong>Localisation:</strong> ${item.filters.location.city || 'GPS'}</p>
-        <p><strong>Rayon:</strong> ${item.filters.radius} km</p>
-        <p><strong>Genres:</strong> ${item.filters.gender.join(', ') || 'Aucun'}</p>
-        <p><strong>Rôles:</strong> ${item.filters.role.join(', ') || 'Aucun'}</p>
-        ${item.filters.practices.length > 0 ? `<p><strong>Pratiques:</strong> ${item.filters.practices.join(', ')}</p>` : ''}
-        ${item.filters.attributes.length > 0 ? `<p><strong>Attributs:</strong> ${item.filters.attributes.join(', ')}</p>` : ''}
+        <p><strong>Zone :</strong> ${escapeHtml(place)} — ${escapeHtml(entry.filters.radius)} km</p>
+        <p><strong>Genres :</strong> ${escapeHtml(entry.filters.gender.join(', ') || 'Tous')}</p>
+        <p><strong>Rôles :</strong> ${escapeHtml(entry.filters.role.join(', ') || 'Tous')}</p>
+        ${entry.filters.practices.length
+          ? `<p><strong>Pratiques :</strong> ${escapeHtml(entry.filters.practices.join(', '))}</p>` : ''}
+        ${entry.filters.attributes.length
+          ? `<p><strong>Attributs :</strong> ${escapeHtml(entry.filters.attributes.join(', '))}</p>` : ''}
       </div>
     `;
-    
-    // Ajouter un événement pour recharger les filtres et relancer la recherche
-    historyItem.addEventListener('click', () => {
-      loadFilters(item.filters);
-      showNotification('Filtres chargés depuis l\'historique', 'info');
+
+    const reload = () => {
+      loadFilters(entry.filters);
+      showNotification('Filtres rechargés depuis l\'historique.', 'info');
+      document.getElementById('search-button')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    };
+
+    item.addEventListener('click', reload);
+    item.addEventListener('keydown', event => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        reload();
+      }
     });
-    
-    historyDiv.appendChild(historyItem);
+
+    fragment.appendChild(item);
+  });
+
+  container.appendChild(fragment);
+}
+
+/**
+ * Coche les options d'une liste de cases à cocher selon les valeurs fournies.
+ * @param {string} name - Attribut name des cases.
+ * @param {string[]} values
+ */
+function applyCheckboxGroup(name, values) {
+  if (!Array.isArray(values)) return;
+  document.querySelectorAll(`input[name="${name}"]`).forEach(checkbox => {
+    checkbox.checked = values.includes(checkbox.value);
   });
 }
 
 /**
- * Formate les filtres pour l'affichage
- * @param {Object} filters - Les filtres à formater
- * @returns {string} - Une chaîne formatée
+ * Sélectionne les options d'un `<select multiple>`.
+ * @param {string} id
+ * @param {string[]} values
  */
-function formatFilters(filters) {
-  const parts = [];
-  
-  if (filters.gender && filters.gender.length > 0) {
-    parts.push(`Genre: ${filters.gender.join(', ')}`);
-  }
-  if (filters.role && filters.role.length > 0) {
-    parts.push(`Rôle: ${filters.role.join(', ')}`);
-  }
-  if (filters.practices && filters.practices.length > 0) {
-    parts.push(`Pratiques: ${filters.practices.join(', ')}`);
-  }
-  if (filters.attributes && filters.attributes.length > 0) {
-    parts.push(`Attributs: ${filters.attributes.join(', ')}`);
-  }
-  if (filters.radius) {
-    parts.push(`Rayon: ${filters.radius} km`);
-  }
-  
-  return parts.join(' | ');
+function applyMultiSelect(id, values) {
+  const select = document.getElementById(id);
+  if (!select || !Array.isArray(values)) return;
+  Array.from(select.options).forEach(option => {
+    option.selected = values.includes(option.value);
+  });
 }
 
 /**
- * Charge des filtres prédéfinis dans l'interface
- * @param {Object} savedFilters - Les filtres à charger
+ * Recharge des filtres sauvegardés dans l'interface.
+ * @param {Object} savedFilters
  */
 function loadFilters(savedFilters) {
-  // Charger la localisation
+  if (!savedFilters) return;
+
   if (savedFilters.location) {
-    filters.location = {...savedFilters.location};
-    
-    if (savedFilters.location.city) {
-      document.getElementById('city-input').value = savedFilters.location.city;
-    }
-    
-    if (savedFilters.location.lat && savedFilters.location.lng) {
-      userLat = savedFilters.location.lat;
-      userLng = savedFilters.location.lng;
+    filters.location = { ...filters.location, ...savedFilters.location };
+    const cityInput = document.getElementById('city-input');
+    if (cityInput) cityInput.value = savedFilters.location.city || '';
+    const countrySelect = document.getElementById('country-select');
+    if (countrySelect && savedFilters.location.country) {
+      countrySelect.value = savedFilters.location.country;
     }
   }
-  
-  // Charger le rayon
-  if (savedFilters.radius) {
-    document.getElementById('radius-select').value = savedFilters.radius;
-    filters.radius = savedFilters.radius;
-  }
-  
-  // Charger les genres
-  if (savedFilters.gender && savedFilters.gender.length > 0) {
-    const genderSelect = document.getElementById('gender-select');
-    Array.from(genderSelect.options).forEach(option => {
-      option.selected = savedFilters.gender.includes(option.value);
-    });
-    filters.gender = [...savedFilters.gender];
-  }
-  
-  // Charger les rôles
-  if (savedFilters.role && savedFilters.role.length > 0) {
-    const roleSelect = document.getElementById('role-select');
-    Array.from(roleSelect.options).forEach(option => {
-      option.selected = savedFilters.role.includes(option.value);
-    });
-    filters.role = [...savedFilters.role];
-  }
-  
-  // Charger les pratiques
-  if (savedFilters.practices && savedFilters.practices.length > 0) {
-    document.querySelectorAll('input[name="practice"]').forEach(checkbox => {
-      checkbox.checked = savedFilters.practices.includes(checkbox.value);
-    });
-    filters.practices = [...savedFilters.practices];
-  }
-  
-  // Charger les attributs
-  if (savedFilters.attributes && savedFilters.attributes.length > 0) {
-    document.querySelectorAll('input[name="attribute"]').forEach(checkbox => {
-      checkbox.checked = savedFilters.attributes.includes(checkbox.value);
-    });
-    filters.attributes = [...savedFilters.attributes];
-  }
-  
-  // Charger l'âge
-  if (savedFilters.ageMin !== undefined) {
-    document.getElementById('age-min').value = savedFilters.ageMin;
-    document.getElementById('age-min-value').textContent = savedFilters.ageMin;
-    filters.ageMin = savedFilters.ageMin;
-  }
-  
-  if (savedFilters.ageMax !== undefined) {
-    document.getElementById('age-max').value = savedFilters.ageMax;
-    document.getElementById('age-max-value').textContent = savedFilters.ageMax;
-    filters.ageMax = savedFilters.ageMax;
-  }
-  
-  // Charger les exclusions
-  if (savedFilters.excludePros !== undefined) {
-    document.getElementById('exclude-pros').checked = savedFilters.excludePros;
-    filters.excludePros = savedFilters.excludePros;
-  }
-  
-  if (savedFilters.excludeVerified !== undefined) {
-    document.getElementById('exclude-verified').checked = savedFilters.excludeVerified;
-    filters.excludeVerified = savedFilters.excludeVerified;
-  }
-  
-  if (savedFilters.excludeNoPic !== undefined) {
-    document.getElementById('exclude-no-pic').checked = savedFilters.excludeNoPic;
-    filters.excludeNoPic = savedFilters.excludeNoPic;
-  }
-  
-  if (savedFilters.excludeOld !== undefined) {
-    document.getElementById('exclude-old').checked = savedFilters.excludeOld;
-    filters.excludeOld = savedFilters.excludeOld;
-  }
-  
-  // Activer le bouton de recherche si une localisation est définie
+
+  const radiusSelect = document.getElementById('radius-select');
+  if (radiusSelect && savedFilters.radius) radiusSelect.value = String(savedFilters.radius);
+
+  const sortSelect = document.getElementById('sort-select');
+  if (sortSelect && savedFilters.sortBy) sortSelect.value = savedFilters.sortBy;
+
+  applyMultiSelect('gender-select', savedFilters.gender);
+  applyMultiSelect('role-select', savedFilters.role);
+  applyCheckboxGroup('practice', savedFilters.practices);
+  applyCheckboxGroup('attribute', savedFilters.attributes);
+  applyCheckboxGroup('source', savedFilters.sources);
+
+  const ageMin = document.getElementById('age-min');
+  const ageMax = document.getElementById('age-max');
+  if (ageMin && savedFilters.ageMin !== undefined) ageMin.value = String(savedFilters.ageMin);
+  if (ageMax && savedFilters.ageMax !== undefined) ageMax.value = String(savedFilters.ageMax);
+
+  [['exclude-pros', 'excludePros'], ['exclude-verified', 'excludeVerified'],
+    ['exclude-no-pic', 'excludeNoPic'], ['exclude-old', 'excludeOld']].forEach(([id, key]) => {
+    const element = document.getElementById(id);
+    if (element && savedFilters[key] !== undefined) element.checked = savedFilters[key];
+  });
+
+  updateFilters();
   enableSearchButton();
 }
 
-// Exporter les fonctions pour les autres scripts
+window.getHistory = getHistory;
 window.saveToHistory = saveToHistory;
 window.updateHistoryDisplay = updateHistoryDisplay;
 window.loadFilters = loadFilters;
-window.formatFilters = formatFilters;

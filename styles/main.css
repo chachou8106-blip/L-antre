@@ -22,6 +22,11 @@
   box-sizing: border-box;
 }
 
+/* `display: flex` sur .checkbox-list annulerait l'attribut hidden. */
+[hidden] {
+  display: none !important;
+}
+
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background-color: var(--background-color);
@@ -462,13 +467,20 @@ footer a:hover {
   position: relative;
 }
 
+.modal.open {
+  display: block;
+}
+
 .close-modal {
   position: absolute;
   right: 1rem;
   top: 1rem;
   font-size: 2rem;
   font-weight: bold;
+  line-height: 1;
   color: var(--text-secondary);
+  background: none;
+  border: none;
   cursor: pointer;
 }
 
@@ -517,10 +529,21 @@ footer a:hover {
 }
 
 /* ===== Notifications ===== */
-.notification {
+.notification-stack {
   position: fixed;
   bottom: 20px;
   right: 20px;
+  z-index: 10001;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: flex-end;
+  pointer-events: none;
+}
+
+.notification {
+  pointer-events: auto;
+  cursor: pointer;
   background-color: var(--surface-color);
   color: var(--text-color);
   padding: 12px 20px;
@@ -541,6 +564,10 @@ footer a:hover {
 
 .notification.error {
   border-left: 4px solid var(--error-color);
+}
+
+.notification.warning {
+  border-left: 4px solid var(--warning-color);
 }
 
 .notification.info {
@@ -648,4 +675,136 @@ footer a:hover {
   .btn {
     width: 100%;
   }
+}
+
+/* ===== Bandeau d'explication ===== */
+.banner {
+  background-color: var(--surface-color);
+  border-left: 4px solid var(--primary-color);
+  border-radius: var(--border-radius);
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.banner i {
+  color: var(--primary-color);
+  margin-right: 0.4rem;
+}
+
+/* ===== Aides et libellés ===== */
+.field-hint {
+  margin-top: 0.5rem;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.checkbox-grid label em {
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  margin-left: 0.3rem;
+  font-style: normal;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.btn-small {
+  margin-top: 0.75rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+}
+
+/* ===== Cartes « lien de recherche » ===== */
+.link-card {
+  border: 1px dashed var(--border-color);
+}
+
+.link-badge {
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(255, 45, 117, 0.15), rgba(255, 107, 157, 0.05));
+  color: var(--primary-color);
+  font-size: 2.5rem;
+}
+
+.modal-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 120px;
+  color: var(--primary-color);
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.result-author {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  margin-bottom: 0.5rem;
+}
+
+.result-info .btn {
+  margin-top: 0.5rem;
+  width: 100%;
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+/* ===== Étiquettes d'analyse d'image ===== */
+.result-meta .tag-vision {
+  background-color: rgba(255, 45, 117, 0.18);
+  color: var(--secondary-color);
+}
+
+/* ===== Modale ouverte : on bloque le défilement de fond ===== */
+body.modal-open {
+  overflow: hidden;
+}
+
+/* ===== Focus visible (accessibilité clavier) ===== */
+:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+@media (max-width: 480px) {
+  .notification-stack {
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
+    align-items: stretch;
+  }
+
+  .notification {
+    max-width: none;
+  }
+}
+
+/* Les boutons de la modale ne doivent pas hériter de la couleur des liens
+   (`#modal-body a`), sinon le texte rose disparaît sur fond rose. */
+#modal-body .btn-primary {
+  color: #fff;
+}
+
+#modal-body .btn-secondary {
+  color: var(--text-color);
+}
+
+#modal-body .btn:hover {
+  text-decoration: none;
 }

@@ -1,58 +1,153 @@
 # L'Antre
 
-**L'Antre** est une **PWA (Progressive Web App)** conçue pour trouver des partenaires près de chez toi, selon tes critères personnalisés. **100% discrète, gratuite et sans compte requis**.
+**L'Antre** est une PWA qui centralise tes recherches de rencontres. Tu règles tes
+critères une fois, l'app construit la requête correspondante pour chaque source et
+te l'ouvre. Aucun compte, aucun serveur : tout reste dans le navigateur.
 
 ---
 
-## 🚀 Installation
+## Comment ça marche
 
-### 1. Héberger sur GitHub Pages
-1. **Active GitHub Pages** :
-   - Va dans **Settings** > **Pages** de ton repo `l-antre`.
-   - Sélectionne la branche **`main`** et le dossier **`/ (root)`**.
-   - Clique sur **Save**.
+L'Antre est un **agrégateur de recherches**, pas un scraper.
 
-2. **Accède à ton application** :
-   - Le lien sera : `https://chachou8106-blip.github.io/l-antre/`
-   - Ouvre-le sur ton téléphone et ajoute-le à ton **écran d’accueil** (comme une app native).
+| Source | Mode | Détail |
+|---|---|---|
+| Reddit | **Direct** | Les annonces r4r publiques sont récupérées via l'API JSON publique et affichées dans l'app. |
+| FetLife | Lien | Compte requis, et les CGU interdisent l'extraction automatique. |
+| Lieux (Google Maps) | Lien | Clubs, saunas et soirées autour de ta position. |
+| Forums libertins | Lien | Requête ciblée sur les forums francophones. |
+| Craigslist | Lien | Section « activity partners » du site local à ta ville. |
+| Recherche web | Lien | Requête généraliste construite depuis tes filtres. |
 
----
+Pourquoi ce choix : une page web ne peut pas interroger un site tiers sans son
+accord (politique CORS du navigateur). Les proxys publics qui contournaient ça
+sont hors service, et les sites concernés interdisent l'extraction automatique.
+Plutôt que d'afficher des profils inventés, L'Antre construit des liens de
+recherche réels, immédiatement ouvrables.
 
-## 🎯 Fonctionnalités
-
-- **Géolocalisation** : Utilise ta position GPS ou une ville manuelle pour cibler les recherches.
-- **Scraping large** : Reddit (r/DirtyR4R, r/BDSM), FetLife (pages publiques), Google Maps, etc.
-- **Filtres ultra-personnalisables** : Genre, rôle BDSM, pratiques, attributs physiques, âge, exclusions.
-- **Détection d’images** (TensorFlow.js) pour identifier des attributs comme "gros seins".
-- **Historique et favoris** : Sauvegarde tes recherches et tes profils préférés.
-- **Notifications** : Alertes pour les nouveaux résultats.
-- **Design responsive** : Adapté pour mobile et desktop.
+Si Reddit refuse la requête depuis ton réseau, l'app te le dit et te laisse la
+carte « lien de recherche » correspondante.
 
 ---
 
-## 🛠️ Personnalisation
+## Installation
 
-### Ajouter un site à scraper
-1. Ajoute une nouvelle fonction dans `scripts/scraping.js` (ex: `scrapeNouveauSite`).
-2. Appele cette fonction dans `searchAll()`.
+### Héberger sur GitHub Pages
+1. **Settings → Pages** du dépôt, branche `main`, dossier `/ (root)`, puis **Save**.
+2. L'app est en ligne sur `https://<ton-compte>.github.io/l-antre/`.
+3. Ouvre-la sur ton téléphone, puis **Ajouter à l'écran d'accueil**.
+
+### En local
+```bash
+npx http-server -p 8080
+# puis ouvrir http://127.0.0.1:8080
+```
+Un simple `file://` ne suffit pas : le service worker et la géolocalisation
+exigent `http://localhost` ou du HTTPS.
+
+---
+
+## Fonctionnalités
+
+- **Localisation** : GPS (avec conversion en nom de ville via OpenStreetMap) ou saisie manuelle.
+- **Filtres** : genre, rôle BDSM, pratiques, attributs, tranche d'âge, exclusions.
+- **Tri** : par date, par pertinence (nombre de mots-clés présents) ou par source.
+- **Analyse d'image (option)** : MobileNet via TensorFlow.js, exécuté sur l'appareil.
+- **Favoris et historique** : stockés en `localStorage`, rechargeables en un clic.
+- **Hors-ligne** : service worker avec app shell en cache.
+
+### À propos de l'analyse d'image
+
+L'option « Analyse d'image » charge TensorFlow.js et MobileNet v1 (~1,3 Mo de
+poids, téléchargés seulement si tu coches la case) et classe les vignettes
+directement sur ton appareil — aucune image n'est envoyée nulle part.
+
+MobileNet est entraîné sur ImageNet : il reconnaît un millier d'objets courants
+(vêtement, animal, véhicule, capture d'écran…). Il sert donc à **étiqueter les
+vignettes** et à **écarter celles qui ne sont pas des photos** (logos, bannières
+de texte). Il ne reconnaît pas d'attributs corporels : le filtre « attributs »
+reste basé sur le texte des annonces, tel que leurs auteurs l'ont écrit.
+
+---
+
+## Structure
+
+```
+index.html              interface
+manifest.json           métadonnées PWA
+service-worker.js       cache hors-ligne
+styles/main.css         thème sombre, responsive
+scripts/utils.js        échappement HTML, texte, dates
+scripts/notifications.js  bandeaux temporaires
+scripts/filters.js      état des filtres et construction des requêtes
+scripts/geolocation.js  GPS et géocodage inverse
+scripts/vision.js       TensorFlow.js / MobileNet
+scripts/favorites.js    favoris (localStorage)
+scripts/render.js       cartes et modale
+scripts/sources.js      registre des sources et recherche
+scripts/history.js      historique (localStorage)
+scripts/app.js          câblage de l'interface
+tools/generate-icons.py régénère les icônes PNG
+```
+
+---
+
+## Personnalisation
+
+### Ajouter une source
+Ajoute une entrée dans `SOURCES` (`scripts/sources.js`) :
+
+```js
+{
+  id: 'ma-source',
+  name: 'Ma source',
+  icon: 'fas fa-star',
+  note: 'Ce que fait cette recherche.',
+  searchUrl() {
+    return `https://exemple.fr/recherche?q=${encodeURIComponent(buildWebQuery())}`;
+  }
+  // async fetchLive() { ... }  // seulement si le site autorise l'accès CORS
+}
+```
+Puis ajoute la case correspondante dans la section « Sources » d'`index.html`.
 
 ### Modifier les filtres
-Édite le fichier `scripts/filters.js` pour ajouter ou modifier les critères de recherche.
+Les critères sont déclarés dans `index.html` et lus par `updateFilters()`
+(`scripts/filters.js`). Le tri des résultats vit dans `sortResults()`.
+
+### Régénérer les icônes
+```bash
+python3 tools/generate-icons.py
+```
 
 ---
 
-## ⚠️ Limitations
+## Limites connues
 
-- **Scraping** : Certains sites peuvent bloquer les requêtes automatiques. Utilise un **VPN** si nécessaire.
-- **Géolocalisation** : Doit être activée dans ton navigateur.
-- **Légalité** : Respecte les conditions d’utilisation des sites scrapés.
+- **Reddit** peut refuser les requêtes non authentifiées selon le réseau ou la
+  région. L'app le signale et bascule sur le lien de recherche.
+- **Genre, rôle et âge** sont déduits du texte des annonces (formats `[25F]`,
+  `F4M`, « dominatrice »…) : c'est une heuristique, pas une donnée déclarée.
+- **Le rayon** sert à cadrer la recherche cartographique ; les annonces Reddit
+  n'exposent pas de coordonnées, donc aucune distance n'est calculée.
+- **Géolocalisation** : nécessite HTTPS et ton autorisation explicite.
 
 ---
 
-## 📜 Licence
-Usage **personnel uniquement**.
+## Vie privée et cadre légal
+
+- Aucune donnée ne quitte l'appareil : pas de compte, pas de serveur, pas
+  d'analytics. Favoris et historique vivent en `localStorage` et le lien
+  « Effacer mes données » les supprime.
+- L'app ne contourne aucune protection technique et n'archive aucun profil :
+  elle ouvre des recherches sur les sites, qui restent seuls responsables de
+  leurs contenus.
+- Les annonces affichées émanent de personnes réelles. Ce sont des données
+  sensibles au sens de l'article 9 du RGPD : ne les republie pas, ne les
+  recoupe pas avec d'autres sources, et respecte les CGU de chaque site.
 
 ---
 
-## 🙌 Contribuer
-Si tu veux améliorer cette application, n’hésite pas à modifier le code et à adapter les fonctionnalités selon tes besoins.
+## Licence
+
+Usage personnel — voir [LICENSE](LICENSE).

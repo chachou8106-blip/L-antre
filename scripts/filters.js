@@ -1,7 +1,7 @@
-// Gestion complète des filtres pour L'Antre
+// Gestion des filtres de recherche de L'Antre
 
 /**
- * Objet global contenant tous les filtres de recherche
+ * Objet global contenant tous les filtres.
  */
 const filters = {
   // Localisation
@@ -11,236 +11,254 @@ const filters = {
     city: null,
     country: 'fr'
   },
-  
+
   // Critères de base
   radius: 50,
   sortBy: 'recent',
-  
+
   // Filtres principaux
   gender: ['Femme'],
   role: ['Dominatrice', 'Soumis', 'Amatrice'],
   practices: ['Sodomie', 'Anal', 'Femdom'],
   attributes: ['Gros seins'],
-  
+
   // Âge
   ageMin: 18,
   ageMax: 99,
-  
+
   // Exclusions
   excludePros: true,
   excludeVerified: false,
   excludeNoPic: false,
-  excludeOld: true
+  excludeOld: true,
+
+  // Sources activées (voir sources.js)
+  sources: ['reddit', 'fetlife', 'maps', 'forums', 'craigslist', 'web'],
+
+  // Analyse d'image (voir vision.js)
+  vision: {
+    enabled: false,
+    hideNonPhoto: false
+  }
 };
 
+/** Termes qui trahissent une annonce professionnelle / payante. */
+const PRO_TERMS = ['pro', 'pros', 'tarif', 'tarifs', 'payant', 'payante', 'professionnel',
+  'professionnelle', 'escort', 'escorte', 'salon', 'massage tantrique', '€', '$'];
+
 /**
- * Met à jour les filtres à partir des éléments du DOM
+ * Lit la valeur d'une case à cocher sans écraser un `false` légitime.
+ * @param {string} id
+ * @param {boolean} fallback
+ * @returns {boolean}
+ */
+function readCheckbox(id, fallback) {
+  const element = document.getElementById(id);
+  return element ? element.checked : fallback;
+}
+
+/**
+ * Met à jour l'objet `filters` à partir du DOM.
  */
 function updateFilters() {
-  // Localisation
-  filters.radius = parseInt(document.getElementById('radius-select').value);
-  filters.location.city = document.getElementById('city-input').value;
-  filters.location.country = document.getElementById('country-select')?.value || 'fr';
-  
-  // Genre
+  const radiusSelect = document.getElementById('radius-select');
+  if (radiusSelect) filters.radius = parseInt(radiusSelect.value, 10) || 50;
+
+  const cityInput = document.getElementById('city-input');
+  if (cityInput) {
+    const city = cityInput.value.trim();
+    filters.location.city = city || null;
+  }
+
+  const countrySelect = document.getElementById('country-select');
+  if (countrySelect) filters.location.country = countrySelect.value;
+
   const genderSelect = document.getElementById('gender-select');
   if (genderSelect) {
     filters.gender = Array.from(genderSelect.selectedOptions).map(option => option.value);
   }
-  
-  // Rôle BDSM
+
   const roleSelect = document.getElementById('role-select');
   if (roleSelect) {
     filters.role = Array.from(roleSelect.selectedOptions).map(option => option.value);
   }
-  
-  // Pratiques
-  const practiceCheckboxes = document.querySelectorAll('input[name="practice"]:checked');
-  filters.practices = Array.from(practiceCheckboxes).map(checkbox => checkbox.value);
-  
-  // Attributs physiques
-  const attributeCheckboxes = document.querySelectorAll('input[name="attribute"]:checked');
-  filters.attributes = Array.from(attributeCheckboxes).map(checkbox => checkbox.value);
-  
-  // Âge
+
+  filters.practices = Array.from(document.querySelectorAll('input[name="practice"]:checked'))
+    .map(checkbox => checkbox.value);
+
+  filters.attributes = Array.from(document.querySelectorAll('input[name="attribute"]:checked'))
+    .map(checkbox => checkbox.value);
+
+  filters.sources = Array.from(document.querySelectorAll('input[name="source"]:checked'))
+    .map(checkbox => checkbox.value);
+
   const ageMinInput = document.getElementById('age-min');
   const ageMaxInput = document.getElementById('age-max');
   if (ageMinInput && ageMaxInput) {
-    filters.ageMin = parseInt(ageMinInput.value);
-    filters.ageMax = parseInt(ageMaxInput.value);
-    
-    // Mettre à jour l'affichage des valeurs d'âge
+    let min = parseInt(ageMinInput.value, 10);
+    let max = parseInt(ageMaxInput.value, 10);
+
+    // Les deux curseurs partagent la même plage : on les empêche de se croiser.
+    if (min > max) {
+      if (document.activeElement === ageMinInput) {
+        max = min;
+        ageMaxInput.value = String(max);
+      } else {
+        min = max;
+        ageMinInput.value = String(min);
+      }
+    }
+
+    filters.ageMin = min;
+    filters.ageMax = max;
+
     const ageMinValue = document.getElementById('age-min-value');
     const ageMaxValue = document.getElementById('age-max-value');
-    if (ageMinValue && ageMaxValue) {
-      ageMinValue.textContent = filters.ageMin;
-      ageMaxValue.textContent = filters.ageMax;
-    }
+    if (ageMinValue) ageMinValue.textContent = String(min);
+    if (ageMaxValue) ageMaxValue.textContent = String(max);
   }
-  
-  // Tri
+
   const sortSelect = document.getElementById('sort-select');
-  if (sortSelect) {
-    filters.sortBy = sortSelect.value;
-  }
-  
-  // Exclusions
-  filters.excludePros = document.getElementById('exclude-pros')?.checked || false;
-  filters.excludeVerified = document.getElementById('exclude-verified')?.checked || false;
-  filters.excludeNoPic = document.getElementById('exclude-no-pic')?.checked || false;
-  filters.excludeOld = document.getElementById('exclude-old')?.checked || true;
+  if (sortSelect) filters.sortBy = sortSelect.value;
+
+  filters.excludePros = readCheckbox('exclude-pros', filters.excludePros);
+  filters.excludeVerified = readCheckbox('exclude-verified', filters.excludeVerified);
+  filters.excludeNoPic = readCheckbox('exclude-no-pic', filters.excludeNoPic);
+  filters.excludeOld = readCheckbox('exclude-old', filters.excludeOld);
+
+  filters.vision.enabled = readCheckbox('vision-enabled', filters.vision.enabled);
+  filters.vision.hideNonPhoto = readCheckbox('vision-hide-nonphoto', filters.vision.hideNonPhoto);
 }
 
 /**
- * Construire la requête pour Reddit
- * @returns {string} - Requête encodée pour Reddit
+ * Mots-clés retenus pour interroger les moteurs de recherche.
+ * @param {number} limit - Nombre maximum de mots-clés.
+ * @returns {string[]}
+ */
+function keywordTerms(limit = 8) {
+  const terms = [...filters.role, ...filters.practices, ...filters.attributes]
+    .map(term => term.trim())
+    .filter(Boolean);
+
+  // Dédupliquer sans perdre l'ordre de priorité (rôles d'abord).
+  return Array.from(new Set(terms)).slice(0, limit);
+}
+
+/**
+ * Terme de localisation utilisable dans une requête texte.
+ * @returns {string}
+ */
+function locationTerm() {
+  return filters.location.city || '';
+}
+
+/**
+ * Construit la requête de recherche Reddit.
+ * Syntaxe Reddit : les groupes OR entre parenthèses, exclusions avec NOT.
+ * @returns {string} - Requête brute (non encodée).
  */
 function buildRedditQuery() {
-  const { gender, role, practices, attributes, excludePros, location } = filters;
-  let query = [];
-  
-  // Ajouter les genres
-  if (gender.length > 0) {
-    query.push(...gender.map(g => g.toLowerCase()));
+  const parts = [];
+  const terms = keywordTerms(8).map(term => (term.includes(' ') ? `"${term}"` : term));
+
+  if (terms.length) parts.push(`(${terms.join(' OR ')})`);
+
+  const city = locationTerm();
+  if (city) parts.push(city.includes(' ') ? `"${city}"` : city);
+
+  let query = parts.join(' AND ');
+
+  if (filters.excludePros) {
+    query += ' NOT (escort OR tarif OR payant OR professionnelle)';
   }
-  
-  // Ajouter les rôles
-  if (role.length > 0) {
-    query.push(...role.map(r => r.toLowerCase()));
-  }
-  
-  // Ajouter les pratiques
-  if (practices.length > 0) {
-    query.push(...practices.map(p => p.toLowerCase()));
-  }
-  
-  // Ajouter les attributs
-  if (attributes.length > 0) {
-    query.push(...attributes.map(a => a.toLowerCase()));
-  }
-  
-  // Ajouter des mots-clés par défaut
-  query.push('rencontre', 'bdsm', 'libertin', 'sex', 'plan cul');
-  
-  // Exclure les pros
-  if (excludePros) {
-    query.push('-pro', '-tarif', '-payant', '-professionnelle', '-escort', '-€', '-$');
-  }
-  
-  // Ajouter la localisation si une ville est spécifiée
-  if (location.city) {
-    query.push(location.city.toLowerCase());
-  }
-  
-  return encodeURIComponent(query.join(' OR '));
+
+  // Reddit tronque au-delà de ~512 caractères.
+  return query.slice(0, 500);
 }
 
 /**
- * Construire la requête pour Google Maps
- * @returns {string} - Requête pour Google Maps
+ * Construit la requête « lieux » (Google Maps, annuaires).
+ * @returns {string}
  */
-function buildGoogleMapsQuery() {
-  const { practices, attributes } = filters;
-  let query = [];
-  
-  if (practices.length > 0) {
-    query.push(...practices.map(p => p.toLowerCase()));
-  }
-  
-  if (attributes.length > 0) {
-    query.push(...attributes.map(a => a.toLowerCase()));
-  }
-  
-  query.push('club', 'soirée', 'rencontre', 'bdsm', 'libertin', 'femdom');
-  
-  return query.join('+');
+function buildPlacesQuery() {
+  const city = locationTerm();
+  const base = ['club libertin', 'sauna libertin', 'soirée bdsm'];
+  return [...base, city].filter(Boolean).join(' ');
 }
 
 /**
- * Vérifie si un profil correspond aux filtres
- * @param {Object} profile - Le profil à vérifier
- * @returns {boolean} - True si le profil correspond, False sinon
+ * Construit une requête générique pour un moteur de recherche web.
+ * @returns {string}
  */
-function matchesFilters(profile) {
-  const { gender, role, practices, attributes, ageMin, ageMax, excludePros, excludeVerified, excludeNoPic, excludeOld } = filters;
-  
-  // Vérifier le genre
-  if (gender.length > 0 && profile.gender) {
-    const profileGender = profile.gender.toLowerCase();
-    if (!gender.some(g => profileGender.includes(g.toLowerCase()))) {
-      return false;
-    }
+function buildWebQuery() {
+  const terms = keywordTerms(5);
+  const city = locationTerm();
+  return [...terms, city, 'rencontre'].filter(Boolean).join(' ');
+}
+
+/**
+ * Niveau de zoom Google Maps correspondant au rayon choisi.
+ * @returns {number}
+ */
+function radiusToZoom() {
+  const table = { 5: 13, 10: 12, 25: 11, 50: 10, 100: 9, 200: 8 };
+  return table[filters.radius] || 11;
+}
+
+/**
+ * Vérifie qu'un résultat correspond aux filtres.
+ * Les cartes de type « lien » (recherches sur un site tiers) ne sont jamais
+ * filtrées : ce ne sont pas des profils.
+ * @param {Object} result
+ * @returns {boolean}
+ */
+function matchesFilters(result) {
+  if (!result) return false;
+  if (result.type === 'link') return true;
+
+  const bio = `${result.title || ''} ${result.bio || ''}`;
+
+  if (filters.gender.length && result.gender) {
+    if (!filters.gender.some(gender => containsTerm(result.gender, gender))) return false;
   }
-  
-  // Vérifier le rôle
-  if (role.length > 0 && profile.role) {
-    const profileRole = profile.role.toLowerCase();
-    if (!role.some(r => profileRole.includes(r.toLowerCase()))) {
-      return false;
-    }
+
+  if (filters.role.length && result.role) {
+    if (!filters.role.some(role => containsTerm(result.role, role))) return false;
   }
-  
-  // Vérifier les pratiques (dans la bio)
-  if (practices.length > 0 && profile.bio) {
-    const bioLower = profile.bio.toLowerCase();
-    if (!practices.some(p => bioLower.includes(p.toLowerCase()))) {
-      return false;
-    }
+
+  // Pratiques et attributs sont cherchés dans le texte de l'annonce.
+  if (filters.practices.length && bio.trim()) {
+    if (!filters.practices.some(practice => containsTerm(bio, practice))) return false;
   }
-  
-  // Vérifier les attributs (dans la bio)
-  if (attributes.length > 0 && profile.bio) {
-    const bioLower = profile.bio.toLowerCase();
-    if (!attributes.some(a => bioLower.includes(a.toLowerCase()))) {
-      return false;
-    }
+
+  if (filters.attributes.length && bio.trim()) {
+    if (!filters.attributes.some(attribute => containsTerm(bio, attribute))) return false;
   }
-  
-  // Vérifier l'âge
-  if (profile.age && (profile.age < ageMin || profile.age > ageMax)) {
-    return false;
+
+  const age = result.age || extractAge(bio);
+  if (age && (age < filters.ageMin || age > filters.ageMax)) return false;
+
+  if (filters.excludePros && PRO_TERMS.some(term => containsTerm(bio, term))) return false;
+
+  if (filters.excludeVerified && result.verified) return false;
+
+  if (filters.excludeNoPic && !result.image) return false;
+
+  if (filters.excludeOld && result.date) {
+    const postDate = new Date(result.date);
+    const limit = new Date();
+    limit.setMonth(limit.getMonth() - 1);
+    if (postDate < limit) return false;
   }
-  
-  // Exclure les pros
-  if (excludePros && profile.bio) {
-    const bioLower = profile.bio.toLowerCase();
-    if (bioLower.includes('pro') || 
-        bioLower.includes('tarif') || 
-        bioLower.includes('payant') ||
-        bioLower.includes('€') ||
-        bioLower.includes('$') ||
-        bioLower.includes('professionnelle') ||
-        bioLower.includes('escort')) {
-      return false;
-    }
-  }
-  
-  // Exclure les vérifiés
-  if (excludeVerified && profile.verified) {
-    return false;
-  }
-  
-  // Exclure les profils sans photo
-  if (excludeNoPic && !profile.image) {
-    return false;
-  }
-  
-  // Exclure les vieux profils (si date disponible)
-  if (excludeOld && profile.date) {
-    const postDate = new Date(profile.date);
-    const oneMonthAgo = new Date();
-    oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
-    if (postDate < oneMonthAgo) {
-      return false;
-    }
-  }
-  
+
   return true;
 }
 
-// Exporter les variables et fonctions pour les autres scripts
 window.filters = filters;
 window.updateFilters = updateFilters;
+window.keywordTerms = keywordTerms;
 window.buildRedditQuery = buildRedditQuery;
-window.buildGoogleMapsQuery = buildGoogleMapsQuery;
+window.buildPlacesQuery = buildPlacesQuery;
+window.buildWebQuery = buildWebQuery;
+window.radiusToZoom = radiusToZoom;
 window.matchesFilters = matchesFilters;
