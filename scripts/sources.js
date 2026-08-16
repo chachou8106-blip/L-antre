@@ -156,10 +156,16 @@ const SOURCES = [
       const url = `https://www.reddit.com/r/${REDDIT_SUBS}/search.json`
         + `?q=${encodeURIComponent(query)}&restrict_sr=on&sort=new&t=year&limit=25&raw_json=1`;
 
-      const response = await fetchWithTimeout(url, { headers: { Accept: 'application/json' } }, 8000);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const { data: payload, via } = await fetchJsonResilient(url, {
+        timeout: 6000,
+        totalBudget: 14000,
+        validate: json => json && json.data && Array.isArray(json.data.children)
+      });
 
-      const payload = await response.json();
+      if (via !== 'direct') {
+        showNotification(`Reddit joint via ${relayLabel(via)}.`, 'info');
+      }
+
       const children = (payload.data && payload.data.children) || [];
 
       return children
@@ -227,15 +233,12 @@ const SOURCES = [
         + `nwr["amenity"="nightclub"]["name"~"libertin|echangiste|échangiste|fetish|bdsm|swing",i](around:${radius},${point.lat},${point.lng});`
         + `);out center 60;`;
 
-      const response = await fetchWithTimeout(OVERPASS_ENDPOINT, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: `data=${encodeURIComponent(query)}`
-      }, 20000);
+      // GET plutôt que POST : une requête GET peut passer par un relais.
+      const { data: payload } = await fetchJsonResilient(
+        `${OVERPASS_ENDPOINT}?data=${encodeURIComponent(query)}`,
+        { timeout: 15000, totalBudget: 25000, validate: json => json && Array.isArray(json.elements) }
+      );
 
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-      const payload = await response.json();
       return (payload.elements || [])
         .map(element => buildPlace(element, point))
         .filter(Boolean)

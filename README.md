@@ -14,7 +14,7 @@ L'Antre est un **agrégateur de recherches**, pas un scraper.
 |---|---|---|
 | Lieux | **Direct** | Clubs libertins, saunas et boutiques réellement présents autour de toi, via l'API Overpass (OpenStreetMap) : nom, adresse, horaires, téléphone, distance. |
 | Reddit | **Direct** | Les annonces r4r publiques, via l'API JSON publique. |
-| FetLife | Lien | Compte requis, et les CGU interdisent l'extraction automatique. |
+| FetLife | Lien | Compte **gratuit** requis — inscription, recherche, groupes et messagerie ne coûtent rien. Les CGU interdisent l'extraction automatique, d'où le lien plutôt qu'une récupération directe. |
 | Forums libertins | Lien | Requête ciblée sur les forums francophones. |
 | Craigslist | Lien | Section « activity partners » du site local à ta ville. |
 | Recherche web | Lien | Requête généraliste construite depuis tes filtres. |
@@ -85,6 +85,28 @@ Restent des exclusions strictes, indépendantes du mode : annonces
 professionnelles ou payantes, tranche d'âge, comptes vérifiés, annonces sans
 photo, annonces de plus d'un mois.
 
+### Quand un réseau bloque une source
+
+Beaucoup d'opérateurs et de DNS filtrants bloquent `reddit.com` par domaine : la
+requête ne renvoie pas une erreur, elle reste pendante. L'app essaie donc
+plusieurs voies d'accès jusqu'à ce que l'une réponde :
+
+1. **ton relais personnel**, s'il est configuré ;
+2. l'**accès direct** ;
+3. trois **relais publics** (allorigins, corsproxy, codetabs).
+
+La voie qui a fonctionné est retenue et essayée en premier la fois suivante. Le
+tout est borné à 14 secondes : si aucune voie ne répond, la carte « lien de
+recherche » prend le relais plutôt que de faire attendre.
+
+**Ce qu'un relais public voit :** l'URL demandée, donc tes mots-clés et ta ville.
+Aucun identifiant ni cookie n'y transite, mais ces requêtes passent chez un
+tiers. Pour que personne ne les voie, déploie ton propre relais :
+[`tools/reddit-relay.js`](tools/reddit-relay.js) est un worker Cloudflare prêt à
+coller — gratuit, environ trois minutes, et il n'accepte que les domaines dont
+l'app a besoin (ce n'est pas un proxy ouvert). Colle ensuite son adresse dans
+« Exclusions → Relais réseau ».
+
 ### Gratuit uniquement
 
 L'option « Gratuit uniquement » (active par défaut) écarte les sites à
@@ -135,6 +157,7 @@ service-worker.js       cache hors-ligne
 styles/main.css         thème sombre, responsive
 scripts/utils.js        échappement HTML, texte, dates
 scripts/notifications.js  bandeaux temporaires
+scripts/relay.js        voies d'accès de secours quand une source est bloquée
 scripts/blocklist.js    domaines bannis (gratuit uniquement)
 scripts/filters.js      état des filtres et construction des requêtes
 scripts/search-engine.js  pondération, score et modes de recherche
@@ -146,6 +169,7 @@ scripts/sources.js      registre des sources et recherche
 scripts/history.js      historique (localStorage)
 scripts/app.js          câblage de l'interface
 tools/generate-icons.py régénère les icônes PNG
+tools/reddit-relay.js   worker Cloudflare à déployer pour un relais personnel
 ```
 
 ---

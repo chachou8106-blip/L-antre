@@ -928,3 +928,27 @@ body.modal-open {
   gap: 0.5rem;
   flex-wrap: wrap;
 }
+
+/* ===== Champ de configuration du relais ===== */
+.blocklist input[type="url"] {
+  width: 100%;
+  margin-bottom: 0.5rem;
+  padding: 0.7rem;
+  background-color: var(--surface-color);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  font-size: 0.9rem;
+}
+
+.blocklist summary span {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.blocklist code {
+  background-color: var(--surface-color);
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+  font-size: 0.85em;
+}

@@ -109,6 +109,41 @@ function setupBlocklistControls() {
   });
 }
 
+/**
+ * Branche la configuration du relais réseau personnel.
+ */
+function setupRelayControls() {
+  const field = document.getElementById('relay-field');
+  const state = document.getElementById('relay-state');
+
+  const sync = () => {
+    const custom = getCustomRelay();
+    if (field) field.value = custom || '';
+    if (state) state.textContent = custom ? '(relais personnel actif)' : '(automatique)';
+  };
+
+  sync();
+
+  document.getElementById('relay-save')?.addEventListener('click', () => {
+    if (!field) return;
+
+    if (setCustomRelay(field.value)) {
+      sync();
+      showNotification(field.value.trim()
+        ? 'Relais personnel enregistré.'
+        : 'Relais personnel retiré.', 'success');
+    } else {
+      showNotification('Adresse invalide : elle doit commencer par https://', 'error');
+    }
+  });
+
+  document.getElementById('relay-clear')?.addEventListener('click', () => {
+    setCustomRelay('');
+    sync();
+    showNotification('Retour au mode automatique.', 'info');
+  });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   // Tout changement de filtre met à jour l'objet `filters`.
   document.querySelectorAll('select, input[type="checkbox"], input[type="range"]')
@@ -149,6 +184,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   setupBlocklistControls();
+  setupRelayControls();
 
   updateFilters();
   syncVisionOptions();

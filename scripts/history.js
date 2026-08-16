@@ -44,7 +44,8 @@ function saveToHistory(usedFilters, resultCount) {
       excludeVerified: usedFilters.excludeVerified,
       excludeNoPic: usedFilters.excludeNoPic,
       excludeOld: usedFilters.excludeOld,
-      strictAttributes: usedFilters.strictAttributes
+      excludePaid: usedFilters.excludePaid,
+      searchMode: usedFilters.searchMode
     }
   });
 
@@ -180,10 +181,15 @@ function loadFilters(savedFilters) {
 
   [['exclude-pros', 'excludePros'], ['exclude-verified', 'excludeVerified'],
     ['exclude-no-pic', 'excludeNoPic'], ['exclude-old', 'excludeOld'],
-    ['strict-attributes', 'strictAttributes']].forEach(([id, key]) => {
+    ['exclude-paid', 'excludePaid']].forEach(([id, key]) => {
     const element = document.getElementById(id);
     if (element && savedFilters[key] !== undefined) element.checked = savedFilters[key];
   });
+
+  const searchModeSelect = document.getElementById('search-mode');
+  if (searchModeSelect && savedFilters.searchMode) {
+    searchModeSelect.value = savedFilters.searchMode;
+  }
 
   updateFilters();
   enableSearchButton();

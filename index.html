@@ -241,6 +241,28 @@
                 </div>
 
                 <details class="blocklist">
+                    <summary>Relais réseau <span id="relay-state"></span></summary>
+                    <p class="field-hint">
+                        Si ton opérateur bloque Reddit, l'app bascule automatiquement sur un
+                        relais public — qui voit alors tes mots-clés et ta ville. Pour que
+                        personne ne les voie, déploie ton propre relais : le code et la marche
+                        à suivre sont dans <code>tools/reddit-relay.js</code> du dépôt
+                        (Cloudflare Workers, gratuit, environ 3 minutes).
+                    </p>
+                    <label class="sr-only" for="relay-field">Adresse de ton relais</label>
+                    <input type="url" id="relay-field" placeholder="https://mon-relais.workers.dev"
+                           autocomplete="off" spellcheck="false">
+                    <div class="blocklist-actions">
+                        <button type="button" id="relay-save" class="btn btn-primary btn-small">
+                            <i class="fas fa-floppy-disk"></i> Enregistrer
+                        </button>
+                        <button type="button" id="relay-clear" class="btn btn-secondary btn-small">
+                            <i class="fas fa-xmark"></i> Retirer
+                        </button>
+                    </div>
+                </details>
+
+                <details class="blocklist">
                     <summary>Sites bannis (<span id="blocklist-count">0</span>)</summary>
                     <p class="field-hint">
                         Un domaine par ligne. Ces sites sont écartés des résultats et exclus
@@ -311,6 +333,7 @@
     <!-- Scripts : l'ordre compte (utils d'abord, app en dernier) -->
     <script src="scripts/utils.js"></script>
     <script src="scripts/notifications.js"></script>
+    <script src="scripts/relay.js"></script>
     <script src="scripts/blocklist.js"></script>
     <script src="scripts/filters.js"></script>
     <script src="scripts/search-engine.js"></script>
