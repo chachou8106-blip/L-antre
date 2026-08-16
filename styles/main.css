@@ -952,3 +952,33 @@ body.modal-open {
   border-radius: 4px;
   font-size: 0.85em;
 }
+
+/* ===== Diagnostic de recherche ===== */
+#diagnostics {
+  margin-top: 1rem;
+}
+
+#diagnostics-body {
+  margin: 0.5rem 0;
+  padding: 0.75rem;
+  background-color: var(--surface-color);
+  border-radius: var(--border-radius);
+  color: var(--text-secondary);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-x: auto;
+  user-select: text;
+}
+
+.app-version {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.1rem 0.4rem;
+  background-color: var(--surface-color);
+  border-radius: 4px;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}

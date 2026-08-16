@@ -467,28 +467,63 @@ async function searchAll() {
   const posts = [];
   const failed = [];
 
+  // Journal de la recherche : sans lui, « ça ne trouve rien » reste
+  // indiagnosticable une fois l'app sur le téléphone.
+  lastDiagnostics = {
+    startedAt: new Date().toISOString(),
+    city: filters.location.city,
+    coords: filters.location.lat !== null
+      ? `${filters.location.lat.toFixed(3)}, ${filters.location.lng.toFixed(3)}` : null,
+    radius: filters.radius,
+    mode: filters.searchMode,
+    sources: []
+  };
+
   if (liveSources.length) {
+    const started = liveSources.map(() => Date.now());
+
     try {
-      const settled = await Promise.allSettled(liveSources.map(source => source.fetchLive()));
+      const settled = await Promise.allSettled(
+        liveSources.map((source, index) => {
+          started[index] = Date.now();
+          return source.fetchLive();
+        }));
 
       settled.forEach((outcome, index) => {
         const source = liveSources[index];
+        const ms = Date.now() - started[index];
+
         if (outcome.status === 'fulfilled') {
           const raw = outcome.value || [];
           // Exclusions dures d'abord (pros, âge, ancienneté), puis notation.
           const kept = rankResults(raw.filter(matchesFilters));
           posts.push(...kept);
+
+          lastDiagnostics.sources.push({
+            name: source.name,
+            status: 'ok',
+            detail: `${raw.length} reçu(s), ${kept.length} retenu(s) après filtres`,
+            ms
+          });
           showNotification(`${source.name} : ${kept.length} résultat(s) sur ${raw.length}.`,
             kept.length ? 'success' : 'info');
         } else {
           failed.push(source.id);
           console.warn(`Source ${source.id} indisponible :`, outcome.reason);
+
+          lastDiagnostics.sources.push({
+            name: source.name,
+            status: 'échec',
+            detail: String((outcome.reason && outcome.reason.message) || outcome.reason),
+            ms
+          });
           showNotification(`${source.name} injoignable — le lien de recherche reste utilisable.`, 'warning');
         }
       });
     } catch (error) {
       // Filet de sécurité : même un imprévu ici ne doit pas vider la liste.
       console.error('Phase de récupération interrompue :', error);
+      lastDiagnostics.sources.push({ name: 'Récupération', status: 'échec', detail: error.message, ms: 0 });
       showNotification('Récupération directe interrompue — les liens restent disponibles.', 'warning');
     }
   }
@@ -510,13 +545,22 @@ async function searchAll() {
 
   finalResults = sortResults(finalResults);
 
+  lastDiagnostics.total = finalResults.length;
+  lastDiagnostics.direct = posts.length;
+  lastDiagnostics.links = finalResults.length - posts.length;
+
   renderResults(finalResults);
+  renderDiagnostics(lastDiagnostics);
   saveToHistory(filters, posts.length);
 
   return finalResults;
 }
 
+/** Journal de la dernière recherche, affiché dans le bloc « Diagnostic ». */
+let lastDiagnostics = null;
+
 window.SOURCES = SOURCES;
+window.getLastDiagnostics = () => lastDiagnostics;
 window.searchAll = searchAll;
 window.sortResults = sortResults;
 window.dedupeResults = dedupeResults;

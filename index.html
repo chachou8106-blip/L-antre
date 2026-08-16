@@ -308,6 +308,20 @@
             <div id="results" class="results-grid">
                 <p class="no-results">Choisis une localisation puis lance une recherche.</p>
             </div>
+
+            <details id="diagnostics" class="blocklist" hidden>
+                <summary>Diagnostic de la dernière recherche</summary>
+                <p class="field-hint">
+                    Ce que chaque source a répondu. En cas de problème, copie ce texte :
+                    il dit exactement ce qui a échoué.
+                </p>
+                <pre id="diagnostics-body"></pre>
+                <div class="blocklist-actions">
+                    <button type="button" id="diagnostics-copy" class="btn btn-secondary btn-small">
+                        <i class="fas fa-copy"></i> Copier le diagnostic
+                    </button>
+                </div>
+            </details>
         </section>
 
         <!-- Section Favoris -->
@@ -327,6 +341,7 @@
         <p>
             <i class="fas fa-lock"></i> Tout reste sur cet appareil — aucun compte, aucun serveur.
             <a href="#" id="clear-all-data">Effacer mes données</a>
+            <span id="app-version" class="app-version"></span>
         </p>
     </footer>
 

@@ -161,8 +161,11 @@ function renderResults(results, options = {}) {
 
   container.innerHTML = '';
   const posts = results.filter(result => result.type !== 'link');
+  const links = results.length - posts.length;
 
-  if (counter) counter.textContent = String(posts.length);
+  // Le compteur reflète ce qui est réellement à l'écran : afficher « 0 » alors
+  // que dix pistes sont affichées se lit comme un échec de la recherche.
+  if (counter) counter.textContent = String(results.length);
 
   if (!results.length) {
     container.innerHTML = '<p class="no-results">Aucun résultat. Élargis tes critères ou change de source.</p>';
@@ -174,17 +177,59 @@ function renderResults(results, options = {}) {
     pending.className = 'results-notice pending';
     pending.innerHTML = `<span class="spinner-inline"></span> ${escapeHtml(options.pendingMessage)}`;
     container.appendChild(pending);
-  } else if (!posts.length) {
+  } else {
     const notice = document.createElement('p');
     notice.className = 'results-notice';
-    notice.textContent = 'Aucune annonce récupérée directement : ouvre les recherches ci-dessous, '
-      + 'elles sont déjà remplies avec tes critères.';
+    notice.textContent = posts.length
+      ? `${posts.length} résultat(s) récupéré(s) en direct, et ${links} recherche(s) prêtes à ouvrir.`
+      : `${links} recherche(s) prêtes à ouvrir, déjà remplies avec tes critères. `
+        + 'Aucune source n\'a pu être interrogée en direct — voir le diagnostic sous les résultats.';
     container.appendChild(notice);
   }
 
   const fragment = document.createDocumentFragment();
   results.forEach(result => fragment.appendChild(createResultCard(result)));
   container.appendChild(fragment);
+}
+
+/**
+ * Met en forme le journal de la dernière recherche.
+ * @param {Object} diagnostics
+ * @returns {string} - Texte brut, copiable.
+ */
+function diagnosticsToText(diagnostics) {
+  if (!diagnostics) return 'Aucune recherche lancée.';
+
+  const lines = [
+    `L'Antre ${APP_VERSION}`,
+    `Zone : ${diagnostics.city || '—'}${diagnostics.coords ? ` (${diagnostics.coords})` : ''}`
+      + ` · rayon ${diagnostics.radius} km · mode ${diagnostics.mode}`,
+    `Total affiché : ${diagnostics.total} (${diagnostics.direct} en direct, ${diagnostics.links} liens)`,
+    ''
+  ];
+
+  diagnostics.sources.forEach(source => {
+    lines.push(`${source.status === 'ok' ? '[ok]' : '[échec]'} ${source.name} — ${source.detail} (${source.ms} ms)`);
+  });
+
+  if (!diagnostics.sources.length) {
+    lines.push('Aucune source interrogeable en direct n\'était activée.');
+  }
+
+  return lines.join('\n');
+}
+
+/**
+ * Affiche le bloc « Diagnostic de la dernière recherche ».
+ * @param {Object} diagnostics
+ */
+function renderDiagnostics(diagnostics) {
+  const block = document.getElementById('diagnostics');
+  const body = document.getElementById('diagnostics-body');
+  if (!block || !body) return;
+
+  block.hidden = false;
+  body.textContent = diagnosticsToText(diagnostics);
 }
 
 /**
@@ -275,6 +320,8 @@ function setupModal() {
 }
 
 window.renderLoading = renderLoading;
+window.renderDiagnostics = renderDiagnostics;
+window.diagnosticsToText = diagnosticsToText;
 window.renderResults = renderResults;
 window.createResultCard = createResultCard;
 window.showProfileModal = showProfileModal;

@@ -1,6 +1,12 @@
 // Point d'entrée de L'Antre : câblage de l'interface.
 
 /**
+ * Version affichée en pied de page et dans le diagnostic. Sans elle, impossible
+ * de savoir si l'appareil tourne bien sur la dernière mise à jour.
+ */
+const APP_VERSION = 'v8';
+
+/**
  * Enregistre le service worker (mode hors-ligne + installation PWA).
  * Chemin relatif : l'app est servie depuis un sous-dossier sur GitHub Pages.
  */
@@ -185,6 +191,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
   setupBlocklistControls();
   setupRelayControls();
+
+  const versionLabel = document.getElementById('app-version');
+  if (versionLabel) versionLabel.textContent = APP_VERSION;
+
+  document.getElementById('diagnostics-copy')?.addEventListener('click', async () => {
+    const text = diagnosticsToText(getLastDiagnostics());
+    try {
+      await navigator.clipboard.writeText(text);
+      showNotification('Diagnostic copié.', 'success');
+    } catch (error) {
+      // Le presse-papiers est refusé hors HTTPS ou sans geste utilisateur reconnu.
+      showNotification('Copie refusée par le navigateur : sélectionne le texte à la main.', 'warning');
+    }
+  });
 
   updateFilters();
   syncVisionOptions();
