@@ -141,6 +141,89 @@ async function ensureCoordinates() {
 }
 
 /**
+ * Ville connue la plus proche de coordonnées données.
+ * Sert de secours quand le géocodage inverse est injoignable : sans nom de
+ * lieu, toutes les recherches texte perdent la localisation.
+ * @param {number} lat
+ * @param {number} lng
+ * @returns {string|null}
+ */
+function nearestKnownCity(lat, lng) {
+  let best = null;
+  let bestDistance = Infinity;
+
+  Object.entries(CITY_FALLBACK).forEach(([name, [cityLat, cityLng]]) => {
+    const distance = distanceKm(lat, lng, cityLat, cityLng);
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      best = name;
+    }
+  });
+
+  // Au-delà de 60 km, annoncer cette ville serait trompeur.
+  if (!best || bestDistance > 60) return null;
+  return best.charAt(0).toUpperCase() + best.slice(1);
+}
+
+/**
+ * Communes situées dans le rayon choisi, d'après OpenStreetMap.
+ * C'est ce qui donne son sens au rayon : chercher « autour de toi » et non
+ * dans la seule commune où le GPS t'a placé.
+ * @param {number} lat
+ * @param {number} lng
+ * @param {number} radiusKm
+ * @returns {Promise<string[]>}
+ */
+async function findNearbyTowns(lat, lng, radiusKm) {
+  const radius = Math.min(radiusKm, 60) * 1000;
+  const query = `[out:json][timeout:15];`
+    + `node["place"~"^(city|town)$"](around:${radius},${lat},${lng});out 60;`;
+
+  try {
+    const { data } = await fetchJsonResilient(
+      `${OVERPASS_ENDPOINT}?data=${encodeURIComponent(query)}`,
+      { timeout: 12000, totalBudget: 18000, validate: json => json && Array.isArray(json.elements) }
+    );
+
+    return (data.elements || [])
+      .filter(element => element.tags && element.tags.name)
+      .map(element => ({
+        name: element.tags.name,
+        population: parseInt(element.tags.population, 10) || 0,
+        distance: distanceKm(lat, lng, element.lat, element.lon)
+      }))
+      // Les plus peuplées d'abord : c'est là qu'il se passe quelque chose.
+      .sort((a, b) => b.population - a.population || a.distance - b.distance)
+      .map(town => town.name);
+  } catch (error) {
+    console.warn('Communes voisines indisponibles :', error);
+    return [];
+  }
+}
+
+/**
+ * Met à jour l'étiquette de zone affichée sous les champs de localisation.
+ */
+function renderZoneLabel() {
+  const label = document.getElementById('zone-label');
+  if (!label) return;
+
+  const { city, lat, nearby } = filters.location;
+  if (!city && lat === null) {
+    label.textContent = '';
+    return;
+  }
+
+  const parts = [];
+  if (city) parts.push(city);
+  else if (lat !== null) parts.push('position GPS');
+  if (lat !== null) parts.push('GPS actif');
+  if (nearby && nearby.length) parts.push(`+ ${nearby.length} commune(s) dans ${filters.radius} km`);
+
+  label.textContent = `Zone : ${parts.join(' · ')}`;
+}
+
+/**
  * Demande la position GPS et l'enregistre dans les filtres.
  */
 function initGeolocation() {
@@ -158,7 +241,9 @@ function initGeolocation() {
       enableSearchButton();
       showNotification('Position obtenue.', 'success');
 
-      const city = await reverseGeocode(filters.location.lat, filters.location.lng);
+      const city = await reverseGeocode(filters.location.lat, filters.location.lng)
+        || nearestKnownCity(filters.location.lat, filters.location.lng);
+
       if (city) {
         filters.location.city = city;
         const cityInput = document.getElementById('city-input');
@@ -167,7 +252,19 @@ function initGeolocation() {
       } else {
         showNotification('Ville non identifiée : saisis-la pour de meilleurs résultats.', 'warning');
       }
+
+      renderZoneLabel();
       enableSearchButton();
+
+      // Les communes voisines élargissent la recherche à tout le rayon.
+      const towns = await findNearbyTowns(filters.location.lat, filters.location.lng, filters.radius);
+      filters.location.nearby = towns.filter(town => normalizeText(town) !== normalizeText(city)).slice(0, 6);
+
+      if (filters.location.nearby.length) {
+        showNotification(`${filters.location.nearby.length} commune(s) voisine(s) incluses : `
+          + `${filters.location.nearby.slice(0, 3).join(', ')}…`, 'info');
+      }
+      renderZoneLabel();
     },
     error => {
       const messages = {
@@ -205,8 +302,10 @@ function updateManualLocation() {
   if (city) {
     filters.location.lat = null;
     filters.location.lng = null;
+    filters.location.nearby = [];
   }
 
+  renderZoneLabel();
   enableSearchButton();
 }
 
@@ -217,3 +316,6 @@ window.reverseGeocode = reverseGeocode;
 window.forwardGeocode = forwardGeocode;
 window.ensureCoordinates = ensureCoordinates;
 window.distanceKm = distanceKm;
+window.nearestKnownCity = nearestKnownCity;
+window.findNearbyTowns = findNearbyTowns;
+window.renderZoneLabel = renderZoneLabel;

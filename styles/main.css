@@ -993,3 +993,14 @@ body.modal-open {
   border-radius: var(--border-radius);
   font-size: 1rem;
 }
+
+/* ===== Étiquette de zone détectée ===== */
+.zone-label {
+  margin: 0;
+  color: var(--secondary-color);
+  font-size: 0.85rem;
+}
+
+.zone-label:empty {
+  display: none;
+}

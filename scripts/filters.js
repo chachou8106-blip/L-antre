@@ -9,7 +9,9 @@ const filters = {
     lat: null,
     lng: null,
     city: null,
-    country: 'fr'
+    country: 'fr',
+    // Communes voisines détectées dans le rayon (voir geolocation.js).
+    nearby: []
   },
 
   // Critères de base
@@ -209,8 +211,14 @@ function themeTerm() {
 function buildRedditQuery() {
   if (filters.query) return filters.query;
 
-  const city = locationTerm();
-  return [city, themeTerm()].filter(Boolean).join(' ');
+  // Reddit accepte les groupes OR : le rayon devient une vraie couverture de
+  // zone, et non la seule commune où le GPS nous a placés.
+  const places = [locationTerm(), ...(filters.location.nearby || []).slice(0, 3)]
+    .filter(Boolean)
+    .map(place => (place.includes(' ') ? `"${place}"` : place));
+
+  const zone = places.length > 1 ? `(${places.join(' OR ')})` : places[0] || '';
+  return [zone, themeTerm()].filter(Boolean).join(' ');
 }
 
 /**
