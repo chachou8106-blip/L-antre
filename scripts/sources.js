@@ -69,9 +69,6 @@ function buildPlace(element, origin) {
   };
 }
 
-/** Subreddits interrogés pour la recherche en direct. */
-const REDDIT_SUBS = 'DirtyR4R+BDSMr4r+r4r+bdsmpersonals+Femdom+libertinage';
-
 /** Sites Craigslist par pays, pour construire un lien de recherche local. */
 const CRAIGSLIST_SITES = {
   fr: ['paris', 'marseille', 'lyon', 'toulouse', 'nice', 'bordeaux', 'nantes', 'strasbourg'],

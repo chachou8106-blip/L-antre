@@ -4,7 +4,7 @@
  * Version affichée en pied de page et dans le diagnostic. Sans elle, impossible
  * de savoir si l'appareil tourne bien sur la dernière mise à jour.
  */
-const APP_VERSION = 'v10';
+const APP_VERSION = 'v11';
 
 /**
  * Enregistre le service worker (mode hors-ligne + installation PWA).
@@ -51,6 +51,14 @@ function clearResults() {
   const counter = document.getElementById('result-count');
   if (container) container.innerHTML = '<p class="no-results">Aucun résultat à afficher.</p>';
   if (counter) counter.textContent = '0';
+
+  // Le diagnostic décrit la recherche effacée : le laisser serait trompeur.
+  const diagnostics = document.getElementById('diagnostics');
+  if (diagnostics) {
+    diagnostics.hidden = true;
+    diagnostics.open = false;
+  }
+
   showNotification('Résultats effacés.', 'info');
 }
 

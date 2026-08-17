@@ -45,25 +45,10 @@ function toggleFavorite(result) {
     return false;
   }
 
-  // On ne stocke que les champs utiles à l'affichage.
-  favorites.unshift({
-    type: result.type,
-    id: result.id,
-    source: result.source,
-    platform: result.platform,
-    icon: result.icon,
-    title: result.title,
-    username: result.username,
-    bio: result.bio,
-    link: result.link,
-    image: result.image,
-    date: result.date,
-    location: result.location,
-    gender: result.gender,
-    role: result.role,
-    age: result.age,
-    savedAt: new Date().toISOString()
-  });
+  // Copie intégrale : une liste blanche de champs faisait perdre l'adresse, le
+  // téléphone et les coordonnées d'un lieu, donc ses boutons Itinéraire et
+  // Appeler. Un résultat est déjà borné en taille à la source.
+  favorites.unshift({ ...result, savedAt: new Date().toISOString() });
 
   saveFavorites(favorites);
   updateFavoritesDisplay();
