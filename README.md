@@ -95,7 +95,11 @@ blocages du réseau de l'utilisateur. Le Cloudflare Worker de `worker/` lève ce
 deux limites : Reddit devient joignable quel que soit l'opérateur, et deux
 sources s'ajoutent — les hashtags publics du fédivers et les flux RSS de forums.
 
-Déploiement gratuit en cinq minutes : voir [`worker/README.md`](worker/README.md).
+Déploiement en deux clics :
+
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/chachou8106-blip/L-antre)
+
+Détails et déploiement manuel : [`worker/README.md`](worker/README.md).
 Son adresse se colle dans « Exclusions → Serveur L'Antre », et le bouton
 « Tester les sources » dit lesquelles répondent réellement chez toi.
 

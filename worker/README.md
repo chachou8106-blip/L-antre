@@ -17,7 +17,17 @@ Ce qu'il **ne fait pas**, et ne fera pas : contourner une authentification.
 FetLife, Instagram, Facebook et Happn restent hors de portée — leurs contenus
 sont derrière un compte et leurs conditions interdisent l'accès automatisé.
 
-## Déploiement (gratuit, ~5 minutes)
+## Déploiement en deux clics
+
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/chachou8106-blip/L-antre)
+
+Le bouton lit le `wrangler.toml` à la racine du dépôt, déploie `worker/worker.js`
+sur ton compte et affiche l'adresse obtenue. Rien à copier-coller.
+
+Ensuite, dans L'Antre : **Exclusions → Serveur L'Antre**, colle l'adresse,
+**Enregistrer**, puis **Tester les sources**.
+
+## Déploiement manuel
 
 ### Par l'interface web
 
