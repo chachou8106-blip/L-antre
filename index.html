@@ -67,6 +67,7 @@
         <section class="section">
             <h2><i class="fas fa-layer-group"></i> Sources</h2>
             <div class="checkbox-grid">
+                <label><input type="checkbox" name="source" value="serveur" checked> Serveur L'Antre <em>(direct)</em></label>
                 <label><input type="checkbox" name="source" value="reddit" checked> Reddit <em>(direct)</em></label>
                 <label><input type="checkbox" name="source" value="fetlife" checked> FetLife — profils <em>(lien)</em></label>
                 <label><input type="checkbox" name="source" value="fetlife-groups" checked> FetLife — groupes <em>(lien)</em></label>
@@ -263,13 +264,14 @@
                 </div>
 
                 <details class="blocklist">
-                    <summary>Relais réseau <span id="relay-state"></span></summary>
+                    <summary>Serveur L'Antre <span id="relay-state"></span></summary>
                     <p class="field-hint">
-                        Si ton opérateur bloque Reddit, l'app bascule automatiquement sur un
-                        relais public — qui voit alors tes mots-clés et ta ville. Pour que
-                        personne ne les voie, déploie ton propre relais : le code et la marche
-                        à suivre sont dans <code>tools/reddit-relay.js</code> du dépôt
-                        (Cloudflare Workers, gratuit, environ 3 minutes).
+                        Sans serveur, l'app se limite à ce qu'un navigateur peut atteindre, et
+                        subit les blocages de ton réseau. Avec serveur, elle récupère en plus
+                        le fédivers et les flux de forums, et Reddit cesse de dépendre de ton
+                        opérateur. Le code et la marche à suivre sont dans
+                        <code>worker/</code> du dépôt (Cloudflare Workers, gratuit,
+                        environ 5 minutes).
                     </p>
                     <label class="sr-only" for="relay-field">Adresse de ton relais</label>
                     <input type="url" id="relay-field" placeholder="https://mon-relais.workers.dev"
@@ -281,7 +283,11 @@
                         <button type="button" id="relay-clear" class="btn btn-secondary btn-small">
                             <i class="fas fa-xmark"></i> Retirer
                         </button>
+                        <button type="button" id="relay-test" class="btn btn-secondary btn-small">
+                            <i class="fas fa-stethoscope"></i> Tester les sources
+                        </button>
                     </div>
+                    <pre id="relay-health" hidden></pre>
                 </details>
 
                 <details class="blocklist">
@@ -371,6 +377,7 @@
     <script src="scripts/utils.js"></script>
     <script src="scripts/notifications.js"></script>
     <script src="scripts/relay.js"></script>
+    <script src="scripts/backend.js"></script>
     <script src="scripts/blocklist.js"></script>
     <script src="scripts/filters.js"></script>
     <script src="scripts/search-engine.js"></script>

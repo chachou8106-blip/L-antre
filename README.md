@@ -12,6 +12,7 @@ L'Antre est un **agrégateur de recherches**, pas un scraper.
 
 | Source | Mode | Détail |
 |---|---|---|
+| Serveur L'Antre | **Direct** | Reddit, fédivers et flux de forums agrégés côté serveur, sans subir les blocages du réseau. Nécessite le worker (voir `worker/`). |
 | Lieux | **Direct** | Clubs libertins, saunas et boutiques réellement présents autour de toi, via l'API Overpass (OpenStreetMap) : nom, adresse, horaires, téléphone, distance. |
 | Reddit | **Direct** | Les annonces r4r publiques, via l'API JSON publique. |
 | FetLife — profils | Lien | Recherche de kinksters sur ta ville et tes critères. |
@@ -87,6 +88,20 @@ Restent des exclusions strictes, indépendantes du mode : annonces
 professionnelles ou payantes, tranche d'âge, comptes vérifiés, annonces sans
 photo, annonces de plus d'un mois.
 
+### Le serveur (optionnel mais décisif)
+
+Un navigateur ne peut interroger que les sites qui l'y autorisent, et subit les
+blocages du réseau de l'utilisateur. Le Cloudflare Worker de `worker/` lève ces
+deux limites : Reddit devient joignable quel que soit l'opérateur, et deux
+sources s'ajoutent — les hashtags publics du fédivers et les flux RSS de forums.
+
+Déploiement gratuit en cinq minutes : voir [`worker/README.md`](worker/README.md).
+Son adresse se colle dans « Exclusions → Serveur L'Antre », et le bouton
+« Tester les sources » dit lesquelles répondent réellement chez toi.
+
+Le serveur ne contourne aucune authentification : FetLife, Instagram, Facebook
+et Happn restent accessibles par lien uniquement.
+
 ### FetLife
 
 Le compte FetLife est **gratuit**, messagerie comprise : seul un badge « supporter »
@@ -97,6 +112,9 @@ pas : le site n'a aucune API publique, tout est derrière l'authentification, et
 ses CGU interdisent l'accès automatisé. Elle ouvre donc trois entrées
 pré-remplies — profils, groupes, événements — que ton compte rend directement
 exploitables.
+
+Le mode d'emploi complet — profil, groupes, munchs, premier message — est dans
+[`GUIDE-FETLIFE.md`](GUIDE-FETLIFE.md).
 
 Les **groupes régionaux** sont le meilleur point d'entrée : les rencontres s'y
 annoncent, et y écrire vaut mieux qu'un message froid à un profil inconnu. Pense
@@ -176,6 +194,7 @@ styles/main.css         thème sombre, responsive
 scripts/utils.js        échappement HTML, texte, dates
 scripts/notifications.js  bandeaux temporaires
 scripts/relay.js        voies d'accès de secours quand une source est bloquée
+scripts/backend.js      dialogue avec le serveur L'Antre
 scripts/blocklist.js    domaines bannis (gratuit uniquement)
 scripts/filters.js      état des filtres et construction des requêtes
 scripts/search-engine.js  pondération, score et modes de recherche
@@ -187,7 +206,10 @@ scripts/sources.js      registre des sources et recherche
 scripts/history.js      historique (localStorage)
 scripts/app.js          câblage de l'interface
 tools/generate-icons.py régénère les icônes PNG
-tools/reddit-relay.js   worker Cloudflare à déployer pour un relais personnel
+tools/reddit-relay.js   relais minimal (remplacé par worker/, conservé pour mémoire)
+worker/worker.js        serveur d'agrégation : Reddit, fédivers, RSS, lieux
+worker/README.md        déploiement du serveur
+GUIDE-FETLIFE.md        comment transformer une recherche en rencontre réelle
 ```
 
 ---

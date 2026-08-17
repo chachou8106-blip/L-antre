@@ -4,7 +4,7 @@
  * Version affichée en pied de page et dans le diagnostic. Sans elle, impossible
  * de savoir si l'appareil tourne bien sur la dernière mise à jour.
  */
-const APP_VERSION = 'v11';
+const APP_VERSION = 'v12';
 
 /**
  * Enregistre le service worker (mode hors-ligne + installation PWA).
@@ -155,6 +155,26 @@ function setupRelayControls() {
     setCustomRelay('');
     sync();
     showNotification('Retour au mode automatique.', 'info');
+  });
+
+  document.getElementById('relay-test')?.addEventListener('click', async () => {
+    const report = document.getElementById('relay-health');
+    if (!report) return;
+
+    report.hidden = false;
+    report.textContent = 'Test en cours…';
+
+    try {
+      const checks = await checkBackendHealth();
+      report.textContent = checks
+        .map(c => `${c.status === 'ok' ? '[ok]' : '[échec]'} ${c.label} — `
+          + `${c.status === 'ok' ? `${c.count} résultat(s)` : c.detail} (${c.ms} ms)`)
+        .join('\n');
+      showNotification('Sources testées.', 'success');
+    } catch (error) {
+      report.textContent = `Échec : ${error.message}`;
+      showNotification(`Test impossible : ${error.message}`, 'error');
+    }
   });
 }
 

@@ -1004,3 +1004,18 @@ body.modal-open {
 .zone-label:empty {
   display: none;
 }
+
+/* ===== Rapport de test des sources du serveur ===== */
+#relay-health {
+  margin-top: 0.5rem;
+  padding: 0.75rem;
+  background-color: var(--surface-color);
+  border-radius: var(--border-radius);
+  color: var(--text-secondary);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+  user-select: text;
+}

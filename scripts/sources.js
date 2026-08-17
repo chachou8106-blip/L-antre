@@ -140,6 +140,28 @@ function redditImage(post) {
 // =============================================
 const SOURCES = [
   {
+    id: 'serveur',
+    name: 'Serveur L\'Antre',
+    icon: 'fas fa-satellite-dish',
+    note: 'Reddit, fédivers, flux de forums et lieux, agrégés côté serveur — '
+      + 'sans dépendre des blocages de ton réseau.',
+    searchUrl() {
+      const base = getBackendUrl();
+      return base ? `${base}/api/health` : 'https://developers.cloudflare.com/workers/';
+    },
+    async fetchLive() {
+      if (!getBackendUrl()) throw new Error('Aucun serveur configuré');
+
+      const { results, sources } = await searchViaBackend();
+      const echecs = sources.filter(s => s.status !== 'ok').map(s => s.id);
+
+      if (echecs.length) {
+        showNotification(`Serveur : ${echecs.join(', ')} sans réponse.`, 'warning');
+      }
+      return results;
+    }
+  },
+  {
     id: 'reddit',
     name: 'Reddit',
     icon: 'fab fa-reddit-alien',
